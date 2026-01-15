@@ -144,6 +144,58 @@
   --shadow-card-hover: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 
+/* ===== SEMANTIC COLOR VARIABLES (Light Theme) ===== */
+:root {
+  /* Background colors */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F8FAFC;
+  --bg-tertiary: #F1F5F9;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F8FAFC;
+  --bg-highlight: rgba(30, 136, 229, 0.08);
+
+  /* Text colors */
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-tertiary: #64748B;
+  --text-muted: #94A3B8;
+  --text-inverse: #FFFFFF;
+
+  /* Border colors */
+  --border-default: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --border-accent: rgba(30, 136, 229, 0.3);
+
+  /* Interactive states */
+  --interactive-default: #F1F5F9;
+  --interactive-hover: #E2E8F0;
+  --interactive-active: #CBD5E1;
+}
+
+/* ===== SEMANTIC COLOR VARIABLES (Dark Theme) ===== */
+[data-theme="dark"] {
+  --bg-primary: #0F1419;
+  --bg-secondary: #1A202C;
+  --bg-tertiary: #2D3748;
+  --bg-card: rgba(30, 40, 60, 0.9);
+  --bg-card-hover: rgba(40, 50, 70, 0.9);
+  --bg-highlight: rgba(30, 136, 229, 0.15);
+
+  --text-primary: #F1F5F9;
+  --text-secondary: #CBD5E1;
+  --text-tertiary: #94A3B8;
+  --text-muted: #64748B;
+  --text-inverse: #0F172A;
+
+  --border-default: rgba(30, 136, 229, 0.2);
+  --border-strong: rgba(30, 136, 229, 0.3);
+  --border-accent: rgba(30, 136, 229, 0.4);
+
+  --interactive-default: rgba(30, 136, 229, 0.1);
+  --interactive-hover: rgba(30, 136, 229, 0.2);
+  --interactive-active: rgba(30, 136, 229, 0.3);
+}
+
 /* ===== BASE RESET ===== */
 *,
 *::before,
@@ -2012,4 +2064,386 @@ p {
   background: rgba(156, 39, 176, 0.2) !important;
   color: var(--purple-300) !important;
   border-color: var(--purple-700) !important;
+}
+
+/* =====================================================
+   UNIVERSAL LAYOUT FIXES
+   Correções de layout que funcionam em ambos os temas
+   ===================================================== */
+
+/* Espaçamento adequado entre seções */
+.main-content>*+* {
+  margin-top: 1.5rem;
+}
+
+/* Cards com espaçamento interno adequado */
+.stat-card,
+.chart-container,
+.glass-card,
+.card,
+.section {
+  padding: 1.25rem !important;
+  margin-bottom: 1rem !important;
+  border-radius: 1rem !important;
+}
+
+@media (min-width: 768px) {
+
+  .stat-card,
+  .chart-container,
+  .glass-card,
+  .card,
+  .section {
+    padding: 1.5rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+}
+
+/* Grid responsivo para stats */
+.stats-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 1rem !important;
+}
+
+@media (min-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 1.25rem !important;
+  }
+}
+
+/* Grid responsivo para programs */
+.programs-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 1rem !important;
+}
+
+@media (min-width: 640px) {
+  .programs-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1.25rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .programs-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1.5rem !important;
+  }
+}
+
+/* Fix para filtros de categoria */
+.category-filters,
+.filter-container {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.75rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.category-filters button,
+.filter-container button {
+  padding: 0.625rem 1rem !important;
+  border-radius: 999px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+}
+
+/* Empty state styling */
+.empty-state {
+  text-align: center !important;
+  padding: 3rem 2rem !important;
+  background: var(--bg-secondary) !important;
+  border-radius: 1rem !important;
+  border: 2px dashed var(--border-default) !important;
+}
+
+.empty-state-icon {
+  font-size: 3rem !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Fix para layout de duas colunas */
+.two-column-layout {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 1.5rem !important;
+}
+
+@media (min-width: 1024px) {
+  .two-column-layout {
+    grid-template-columns: 2fr 1fr !important;
+  }
+}
+
+/* Fix para insights/actions sidebar */
+.sidebar-actions {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+}
+
+/* Fix para o modal */
+.modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+  z-index: 1000 !important;
+}
+
+.modal-content {
+  background: var(--bg-card) !important;
+  border-radius: 1.5rem !important;
+  padding: 2rem !important;
+  max-width: 500px !important;
+  width: 100% !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  border: 2px solid var(--border-default) !important;
+}
+
+/* Fix para textos inline com estilos */
+span[style*="color"] {
+  color: inherit !important;
+}
+
+/* Garantir cores corretas no tema claro */
+.text-neutral-500 {
+  color: var(--text-secondary) !important;
+}
+
+.text-neutral-600 {
+  color: var(--text-secondary) !important;
+}
+
+.text-neutral-400 {
+  color: var(--text-tertiary) !important;
+}
+
+/* Dashboard specific fixes */
+.dashboard-header {
+  margin-bottom: 2rem !important;
+}
+
+.dashboard-header h1 {
+  font-size: 2rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.dashboard-header p {
+  font-size: 1rem !important;
+  opacity: 0.8 !important;
+}
+
+/* Quick actions buttons */
+.quick-actions {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.75rem !important;
+}
+
+.quick-actions button,
+.quick-actions a {
+  width: 100% !important;
+  justify-content: center !important;
+  padding: 0.875rem 1.25rem !important;
+}
+
+/* Category summary cards */
+.category-summary {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 0.75rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+@media (min-width: 768px) {
+  .category-summary {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .category-summary {
+    grid-template-columns: repeat(6, 1fr) !important;
+  }
+}
+
+.category-summary>div {
+  text-align: center !important;
+  padding: 1rem !important;
+  border-radius: 0.75rem !important;
+  background: var(--interactive-default) !important;
+  border: 1px solid var(--border-default) !important;
+  transition: all 0.2s ease !important;
+}
+
+.category-summary>div:hover {
+  background: var(--interactive-hover) !important;
+  border-color: var(--primary-400) !important;
+}
+
+.category-summary .count {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+}
+
+.category-summary .label {
+  font-size: 0.75rem !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Program cards fixes */
+.program-card {
+  background: var(--bg-card) !important;
+  border: 2px solid var(--border-default) !important;
+  border-radius: 1rem !important;
+  padding: 1.25rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.program-card:hover {
+  border-color: var(--primary-400) !important;
+  box-shadow: 0 8px 24px rgba(30, 136, 229, 0.15) !important;
+}
+
+.program-card h3 {
+  font-size: 1.125rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.program-card p {
+  font-size: 0.875rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+/* Behavior cards fixes */
+.behavior-card {
+  background: var(--bg-card) !important;
+  border: 2px solid var(--border-default) !important;
+  border-radius: 1rem !important;
+  padding: 1.25rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.behavior-card:hover {
+  border-color: var(--primary-400) !important;
+}
+
+/* Insights panel fixes */
+.insight-card {
+  background: var(--bg-highlight) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 0.75rem !important;
+  padding: 1rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.insight-card.priority-high {
+  border-left: 4px solid var(--error-500) !important;
+}
+
+.insight-card.priority-medium {
+  border-left: 4px solid var(--warning-500) !important;
+}
+
+.insight-card.priority-low {
+  border-left: 4px solid var(--success-500) !important;
+}
+
+/* Hide scrollbars but keep functionality */
+.scroll-container {
+  overflow-x: auto !important;
+  scrollbar-width: thin !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Fix para o layout principal */
+.lg\\:col-span-2 {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.5rem !important;
+}
+
+/* Fix para espaçamento do grid de 3 colunas do perfil */
+.grid.grid-cols-1.lg\\:grid-cols-3 {
+  display: grid !important;
+  gap: 1.5rem !important;
+}
+
+@media (min-width: 1024px) {
+  .grid.grid-cols-1.lg\\:grid-cols-3 {
+    grid-template-columns: 2fr 1fr !important;
+  }
+}
+
+/* Fix para botão primário em tema claro */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600)) !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.75rem 1.5rem !important;
+  border-radius: 0.75rem !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-700)) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(30, 136, 229, 0.3) !important;
+}
+
+/* Fix para botão secundário */
+.btn-secondary {
+  background: var(--interactive-default) !important;
+  color: var(--text-primary) !important;
+  border: 2px solid var(--border-default) !important;
+  padding: 0.75rem 1.5rem !important;
+  border-radius: 0.75rem !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.btn-secondary:hover {
+  background: var(--interactive-hover) !important;
+  border-color: var(--primary-400) !important;
+}
+
+/* Fix para botão success */
+.btn-success {
+  background: linear-gradient(135deg, var(--success-500), var(--success-600)) !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.75rem 1.5rem !important;
+  border-radius: 0.75rem !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+}
+
+.btn-success:hover {
+  background: linear-gradient(135deg, var(--success-600), var(--success-700)) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3) !important;
 }
