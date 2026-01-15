@@ -1,0 +1,123 @@
+{
+    "name": "Dom TEA",
+    "short_name": "Dom TEA",
+    "description": "Sistema completo de acompanhamento de terapia ABA para crianças com autismo",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#F0F7FF",
+    "theme_color": "#199BF5",
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "lang": "pt-BR",
+    "categories": [
+        "health",
+        "medical",
+        "education"
+    ],
+    "icons": [
+        {
+            "src": "/icons/icon-72x72.png",
+            "sizes": "72x72",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-96x96.png",
+            "sizes": "96x96",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-128x128.png",
+            "sizes": "128x128",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-144x144.png",
+            "sizes": "144x144",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-152x152.png",
+            "sizes": "152x152",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-384x384.png",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable any"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/screenshots/dashboard.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Dashboard principal do Dom TEA"
+        },
+        {
+            "src": "/screenshots/session.png",
+            "sizes": "750x1334",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Tela de sessão de terapia"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Nova Sessão",
+            "short_name": "Sessão",
+            "description": "Iniciar uma nova sessão de terapia",
+            "url": "/session",
+            "icons": [
+                {
+                    "src": "/icons/shortcut-session.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "Ver Relatórios",
+            "short_name": "Relatórios",
+            "description": "Visualizar relatórios e estatísticas",
+            "url": "/reports",
+            "icons": [
+                {
+                    "src": "/icons/shortcut-reports.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "Insights IA",
+            "short_name": "Insights",
+            "description": "Ver insights da inteligência artificial",
+            "url": "/insights",
+            "icons": [
+                {
+                    "src": "/icons/shortcut-insights.png",
+                    "sizes": "96x96"
+                }
+            ]
+        }
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false
+}

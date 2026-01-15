@@ -1,0 +1,190 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== PACIENTE (CRIANÇA) =====
+model Patient {
+  id          String   @id @default(cuid())
+  name        String
+  birthDate   DateTime?
+  photo       String?
+  diagnosis   String?
+  notes       String?
+  preferences Json?    // Preferências, reforçadores, etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  sessions    Session[]
+  behaviors   Behavior[]
+  checkins    DailyCheckin[]
+  programs    Program[]
+}
+
+// ===== PROGRAMA DE ENSINO =====
+model Program {
+  id             String   @id @default(cuid())
+  name           String
+  category       String   // MAND, TACT, RECEPTIVO, MOTOR, SOCIAL, INTRAVERBAL
+  description    String?
+  targetAccuracy Int      @default(80)
+  status         String   @default("active") // active, paused, completed
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relacionamentos
+  patientId String?
+  patient   Patient? @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  trials    Trial[]
+  targets   Target[]
+}
+
+// ===== ALVO/META DO PROGRAMA =====
+model Target {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  status      String   @default("in_progress") // in_progress, mastered, on_hold
+  masteryDate DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  programId String
+  program   Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+  trials    Trial[]
+}
+
+// ===== SESSÃO DE TERAPIA =====
+model Session {
+  id            String   @id @default(cuid())
+  startTime     DateTime @default(now())
+  endTime       DateTime?
+  duration      Int?     // Duração em segundos
+  notes         String?
+  therapistName String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relacionamentos
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  trials    Trial[]
+  behaviorRecords BehaviorRecord[]
+}
+
+// ===== TENTATIVA (TRIAL) =====
+model Trial {
+  id          String   @id @default(cuid())
+  result      String   // correct, incorrect, no_response
+  promptLevel String   // I (independent), V (verbal), G (gestural), FP (partial physical), FT (total physical)
+  latency     Int?     // Latência em milissegundos
+  duration    Int?     // Duração em milissegundos
+  notes       String?
+  timestamp   DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  // Relacionamentos
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  programId String
+  program   Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+  targetId  String?
+  target    Target? @relation(fields: [targetId], references: [id], onDelete: SetNull)
+}
+
+// ===== COMPORTAMENTO ALVO =====
+model Behavior {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // decrease, increase, monitor
+  description String?
+  severity    String   @default("medium") // low, medium, high, positive
+  color       String   @default("#F59E0B")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  patientId String?
+  patient   Patient? @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  records   BehaviorRecord[]
+}
+
+// ===== REGISTRO DE COMPORTAMENTO =====
+model BehaviorRecord {
+  id        String   @id @default(cuid())
+  count     Int      @default(1)
+  context   String?  // during_session, transition, meal, free_time, social, demand, other
+  notes     String?
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  // Relacionamentos
+  behaviorId String
+  behavior   Behavior @relation(fields: [behaviorId], references: [id], onDelete: Cascade)
+  sessionId  String?
+  session    Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+}
+
+// ===== CHECK-IN DIÁRIO =====
+model DailyCheckin {
+  id        String   @id @default(cuid())
+  date      DateTime @default(now()) @db.Date
+  sleep     Int      // 1-10 horas
+  mood      String   // happy, neutral, sad, anxious, irritated
+  health    String   // normal, flu, pain, other
+  notes     String?
+  createdAt DateTime @default(now())
+
+  // Relacionamentos
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, date])
+}
+
+// ===== REFORÇADORES =====
+model Reinforcer {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // food, toy, activity, social, sensory
+  description String?
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ===== CONFIGURAÇÕES DO USUÁRIO =====
+model Settings {
+  id                   String   @id @default(cuid())
+  theme                String   @default("dark")
+  sessionGoalMinutes   Int      @default(45)
+  showTimers           Boolean  @default(true)
+  showLatency          Boolean  @default(true)
+  celebrateSuccess     Boolean  @default(true)
+  enableOfflineSync    Boolean  @default(true)
+  autoBackup           Boolean  @default(true)
+  notificationsEnabled Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+// ===== CONQUISTAS =====
+model Achievement {
+  id          String   @id @default(cuid())
+  type        String   // streak, accuracy, sessions, trials, etc.
+  title       String
+  description String?
+  icon        String?
+  unlockedAt  DateTime @default(now())
+  metadata    Json?    // Dados extras como valor do streak, etc.
+}
