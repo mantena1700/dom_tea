@@ -14,7 +14,8 @@ import {
     AlertCircle,
     Activity,
     FileText,
-    Check
+    Check,
+    Save
 } from 'lucide-react';
 import {
     Card,
@@ -36,12 +37,13 @@ const TABS = [
     { id: 'profile', label: 'Perfil', icon: User },
     { id: 'health', label: 'Saúde', icon: Heart },
     { id: 'preferences', label: 'Preferências', icon: Star },
-    { id: 'notes', label: 'Observações', icon: FileText },
+    { id: 'notes', label: 'Notas', icon: FileText },
 ];
 
 export default function PatientProfile() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
     const [activeTab, setActiveTab] = useState('profile');
     const [notes, setNotes] = useState([]);
     const [newNote, setNewNote] = useState('');
@@ -88,8 +90,11 @@ export default function PatientProfile() {
 
     const handleSave = async () => {
         setSaving(true);
+        setSaved(false);
         try {
             await savePatient(patient);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2000);
         } catch (error) {
             console.error('Erro ao salvar:', error);
         } finally {
@@ -102,7 +107,6 @@ export default function PatientProfile() {
         if (file) {
             const reader = new FileReader();
             reader.onload = (event) => {
-                // Redimensionar imagem
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
@@ -159,32 +163,35 @@ export default function PatientProfile() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 rounded-full animate-spin" />
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 rounded-full animate-spin" />
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Carregando...</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto px-4 py-6 pb-24 lg:pb-6">
 
-            {/* Header com Foto */}
+            {/* === HEADER COM FOTO === */}
             <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
                 {/* Foto */}
-                <div className="relative">
+                <div className="relative group">
                     <div
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-28 h-28 rounded-full bg-slate-200 dark:bg-slate-700 border-4 border-white dark:border-slate-800 shadow-xl overflow-hidden cursor-pointer group"
+                        className="w-28 h-28 rounded-full bg-slate-200 dark:bg-slate-700 border-4 border-white dark:border-slate-800 shadow-xl overflow-hidden cursor-pointer"
                     >
                         {patient.photo ? (
                             <img src={patient.photo} alt="Foto" className="w-full h-full object-cover" />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-400">
-                                <User size={40} />
+                            <div className="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-500">
+                                <User size={48} />
                             </div>
                         )}
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Camera size={24} className="text-white" />
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                            <Camera size={28} className="text-white" />
                         </div>
                     </div>
                     <input
@@ -198,18 +205,18 @@ export default function PatientProfile() {
 
                 {/* Info */}
                 <div className="text-center sm:text-left flex-1">
-                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
+                    <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white">
                         {patient.name || 'Nome do Paciente'}
                     </h1>
-                    <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
+                    <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-3">
                         {patient.birthDate && (
-                            <Badge variant="neutral">
+                            <Badge variant="neutral" size="lg">
                                 <Calendar size={14} />
                                 {calculateAge(patient.birthDate)} anos
                             </Badge>
                         )}
                         {patient.diagnosis && (
-                            <Badge variant="primary">
+                            <Badge variant="primary" size="lg">
                                 <Activity size={14} />
                                 {patient.diagnosis}
                             </Badge>
@@ -217,21 +224,30 @@ export default function PatientProfile() {
                     </div>
                 </div>
 
-                {/* Salvar */}
-                <Button onClick={handleSave} loading={saving}>
-                    <Check size={18} />
-                    Salvar
+                {/* Botão Salvar */}
+                <Button onClick={handleSave} loading={saving} className="w-full sm:w-auto">
+                    {saved ? (
+                        <>
+                            <Check size={18} />
+                            Salvo!
+                        </>
+                    ) : (
+                        <>
+                            <Save size={18} />
+                            Salvar
+                        </>
+                    )}
                 </Button>
             </div>
 
-            {/* Tabs */}
+            {/* === TABS === */}
             <TabNav
                 tabs={TABS}
                 activeTab={activeTab}
                 onChange={setActiveTab}
             />
 
-            {/* Conteúdo das Tabs */}
+            {/* === CONTEÚDO DAS TABS === */}
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeTab}
@@ -242,8 +258,8 @@ export default function PatientProfile() {
                 >
                     {/* PERFIL */}
                     {activeTab === 'profile' && (
-                        <Card>
-                            <div className="space-y-4">
+                        <Card hover={false}>
+                            <div className="space-y-5">
                                 <Input
                                     label="Nome Completo"
                                     icon={User}
@@ -281,69 +297,73 @@ export default function PatientProfile() {
 
                     {/* SAÚDE */}
                     {activeTab === 'health' && (
-                        <div className="space-y-4">
+                        <div className="space-y-5">
                             {/* Alergias */}
-                            <Card>
-                                <SectionTitle>Alergias</SectionTitle>
-                                <div className="flex gap-2 mb-3">
+                            <Card hover={false}>
+                                <SectionTitle>🚨 Alergias</SectionTitle>
+                                <div className="flex gap-2 mb-4">
                                     <Input
                                         placeholder="Adicionar alergia..."
                                         value={tempInputs.allergy}
                                         onChange={(e) => setTempInputs({ ...tempInputs, allergy: e.target.value })}
                                         className="flex-1"
+                                        onKeyDown={(e) => e.key === 'Enter' && addToList('allergies', tempInputs.allergy, 'allergy')}
                                     />
                                     <Button
                                         onClick={() => addToList('allergies', tempInputs.allergy, 'allergy')}
-                                        size="sm"
+                                        size="md"
                                     >
                                         <Plus size={18} />
                                     </Button>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    {(patient.allergies || []).map((item, idx) => (
-                                        <Badge key={idx} variant="error">
-                                            <AlertCircle size={12} />
-                                            {item}
-                                            <button onClick={() => removeFromList('allergies', idx)} className="ml-1">
-                                                <X size={12} />
-                                            </button>
-                                        </Badge>
-                                    ))}
-                                    {(!patient.allergies || patient.allergies.length === 0) && (
-                                        <span className="text-sm text-slate-400">Nenhuma alergia registrada</span>
+                                    {(patient.allergies || []).length === 0 ? (
+                                        <span className="text-sm text-slate-400 dark:text-slate-500">Nenhuma alergia registrada</span>
+                                    ) : (
+                                        (patient.allergies || []).map((item, idx) => (
+                                            <Badge key={idx} variant="error" size="lg">
+                                                <AlertCircle size={14} />
+                                                {item}
+                                                <button onClick={() => removeFromList('allergies', idx)} className="ml-1 hover:text-white">
+                                                    <X size={14} />
+                                                </button>
+                                            </Badge>
+                                        ))
                                     )}
                                 </div>
                             </Card>
 
                             {/* Medicamentos */}
-                            <Card>
-                                <SectionTitle>Medicamentos</SectionTitle>
-                                <div className="flex gap-2 mb-3">
+                            <Card hover={false}>
+                                <SectionTitle>💊 Medicamentos</SectionTitle>
+                                <div className="flex gap-2 mb-4">
                                     <Input
                                         placeholder="Adicionar medicamento..."
                                         value={tempInputs.medication}
                                         onChange={(e) => setTempInputs({ ...tempInputs, medication: e.target.value })}
                                         className="flex-1"
+                                        onKeyDown={(e) => e.key === 'Enter' && addToList('medications', tempInputs.medication, 'medication')}
                                     />
                                     <Button
                                         onClick={() => addToList('medications', tempInputs.medication, 'medication')}
-                                        size="sm"
+                                        size="md"
                                     >
                                         <Plus size={18} />
                                     </Button>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    {(patient.medications || []).map((item, idx) => (
-                                        <Badge key={idx} variant="primary">
-                                            <Pill size={12} />
-                                            {item}
-                                            <button onClick={() => removeFromList('medications', idx)} className="ml-1">
-                                                <X size={12} />
-                                            </button>
-                                        </Badge>
-                                    ))}
-                                    {(!patient.medications || patient.medications.length === 0) && (
-                                        <span className="text-sm text-slate-400">Nenhum medicamento registrado</span>
+                                    {(patient.medications || []).length === 0 ? (
+                                        <span className="text-sm text-slate-400 dark:text-slate-500">Nenhum medicamento registrado</span>
+                                    ) : (
+                                        (patient.medications || []).map((item, idx) => (
+                                            <Badge key={idx} variant="primary" size="lg">
+                                                <Pill size={14} />
+                                                {item}
+                                                <button onClick={() => removeFromList('medications', idx)} className="ml-1 hover:text-white">
+                                                    <X size={14} />
+                                                </button>
+                                            </Badge>
+                                        ))
                                     )}
                                 </div>
                             </Card>
@@ -352,60 +372,62 @@ export default function PatientProfile() {
 
                     {/* PREFERÊNCIAS */}
                     {activeTab === 'preferences' && (
-                        <div className="space-y-4">
+                        <div className="space-y-5">
                             {/* Interesses */}
-                            <Card>
-                                <SectionTitle>Interesses</SectionTitle>
-                                <div className="flex gap-2 mb-3">
+                            <Card hover={false}>
+                                <SectionTitle>⭐ Interesses</SectionTitle>
+                                <div className="flex gap-2 mb-4">
                                     <Input
                                         placeholder="Adicionar interesse..."
                                         value={tempInputs.interest}
                                         onChange={(e) => setTempInputs({ ...tempInputs, interest: e.target.value })}
                                         className="flex-1"
+                                        onKeyDown={(e) => e.key === 'Enter' && addToList('interests', tempInputs.interest, 'interest')}
                                     />
                                     <Button
                                         onClick={() => addToList('interests', tempInputs.interest, 'interest')}
-                                        size="sm"
+                                        size="md"
                                     >
                                         <Plus size={18} />
                                     </Button>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {(patient.interests || []).map((item, idx) => (
-                                        <Badge key={idx} variant="success">
-                                            <Star size={12} />
+                                        <Badge key={idx} variant="success" size="lg">
+                                            <Star size={14} />
                                             {item}
-                                            <button onClick={() => removeFromList('interests', idx)} className="ml-1">
-                                                <X size={12} />
+                                            <button onClick={() => removeFromList('interests', idx)} className="ml-1 hover:text-white">
+                                                <X size={14} />
                                             </button>
                                         </Badge>
                                     ))}
                                 </div>
                             </Card>
 
-                            {/* Forças */}
-                            <Card>
-                                <SectionTitle>Pontos Fortes</SectionTitle>
-                                <div className="flex gap-2 mb-3">
+                            {/* Pontos Fortes */}
+                            <Card hover={false}>
+                                <SectionTitle>💪 Pontos Fortes</SectionTitle>
+                                <div className="flex gap-2 mb-4">
                                     <Input
                                         placeholder="Adicionar ponto forte..."
                                         value={tempInputs.strength}
                                         onChange={(e) => setTempInputs({ ...tempInputs, strength: e.target.value })}
                                         className="flex-1"
+                                        onKeyDown={(e) => e.key === 'Enter' && addToList('strengths', tempInputs.strength, 'strength')}
                                     />
                                     <Button
                                         onClick={() => addToList('strengths', tempInputs.strength, 'strength')}
-                                        size="sm"
+                                        size="md"
                                     >
                                         <Plus size={18} />
                                     </Button>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {(patient.strengths || []).map((item, idx) => (
-                                        <Badge key={idx} variant="purple">
+                                        <Badge key={idx} variant="purple" size="lg">
                                             {item}
-                                            <button onClick={() => removeFromList('strengths', idx)} className="ml-1">
-                                                <X size={12} />
+                                            <button onClick={() => removeFromList('strengths', idx)} className="ml-1 hover:text-white">
+                                                <X size={14} />
                                             </button>
                                         </Badge>
                                     ))}
@@ -413,28 +435,29 @@ export default function PatientProfile() {
                             </Card>
 
                             {/* Desafios */}
-                            <Card>
-                                <SectionTitle>Desafios</SectionTitle>
-                                <div className="flex gap-2 mb-3">
+                            <Card hover={false}>
+                                <SectionTitle>🎯 Desafios</SectionTitle>
+                                <div className="flex gap-2 mb-4">
                                     <Input
                                         placeholder="Adicionar desafio..."
                                         value={tempInputs.challenge}
                                         onChange={(e) => setTempInputs({ ...tempInputs, challenge: e.target.value })}
                                         className="flex-1"
+                                        onKeyDown={(e) => e.key === 'Enter' && addToList('challenges', tempInputs.challenge, 'challenge')}
                                     />
                                     <Button
                                         onClick={() => addToList('challenges', tempInputs.challenge, 'challenge')}
-                                        size="sm"
+                                        size="md"
                                     >
                                         <Plus size={18} />
                                     </Button>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {(patient.challenges || []).map((item, idx) => (
-                                        <Badge key={idx} variant="warning">
+                                        <Badge key={idx} variant="warning" size="lg">
                                             {item}
-                                            <button onClick={() => removeFromList('challenges', idx)} className="ml-1">
-                                                <X size={12} />
+                                            <button onClick={() => removeFromList('challenges', idx)} className="ml-1 hover:text-white">
+                                                <X size={14} />
                                             </button>
                                         </Badge>
                                     ))}
@@ -443,18 +466,19 @@ export default function PatientProfile() {
                         </div>
                     )}
 
-                    {/* OBSERVAÇÕES */}
+                    {/* NOTAS */}
                     {activeTab === 'notes' && (
-                        <div className="space-y-4">
-                            <Card>
+                        <div className="space-y-5">
+                            <Card hover={false}>
                                 <Textarea
-                                    placeholder="Adicionar nova observação..."
+                                    placeholder="Escreva uma nova observação..."
                                     value={newNote}
                                     onChange={(e) => setNewNote(e.target.value)}
+                                    className="mb-4"
                                 />
                                 <Button
                                     onClick={handleAddNote}
-                                    className="w-full mt-3"
+                                    className="w-full"
                                     disabled={!newNote.trim()}
                                 >
                                     <Plus size={18} />
@@ -465,15 +489,15 @@ export default function PatientProfile() {
                             {notes.length === 0 ? (
                                 <EmptyState
                                     icon={FileText}
-                                    title="Nenhuma observação"
+                                    title="Nenhuma nota"
                                     description="Adicione observações importantes sobre o paciente"
                                 />
                             ) : (
                                 <div className="space-y-3">
                                     {notes.map((note, idx) => (
                                         <Card key={idx} hover={false}>
-                                            <p className="text-slate-800 dark:text-white">{note.content}</p>
-                                            <p className="text-xs text-slate-400 mt-2">
+                                            <p className="text-slate-800 dark:text-white leading-relaxed">{note.content}</p>
+                                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-3">
                                                 {new Date(note.timestamp).toLocaleDateString('pt-BR', {
                                                     day: '2-digit',
                                                     month: 'short',

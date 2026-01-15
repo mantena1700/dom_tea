@@ -11,7 +11,8 @@ import {
     X,
     Pause,
     ChevronRight,
-    Zap
+    Zap,
+    RotateCcw
 } from 'lucide-react';
 import {
     Card,
@@ -72,7 +73,7 @@ export default function SessionController() {
     const loadData = async () => {
         try {
             const programsData = await getPrograms();
-            setPrograms(programsData?.filter(p => p.active) || []);
+            setPrograms(programsData?.filter(p => p.active !== false) || []);
         } catch (error) {
             console.error('Erro ao carregar programas:', error);
         } finally {
@@ -93,6 +94,7 @@ export default function SessionController() {
             setSessionActive(true);
             setSessionTime(0);
             setTrials([]);
+            setConsecutiveCorrect(0);
         } catch (error) {
             console.error('Erro ao iniciar sessão:', error);
         }
@@ -109,6 +111,7 @@ export default function SessionController() {
             setSessionActive(false);
             setCurrentSession(null);
             setSelectedProgram(null);
+            setTrials([]);
             clearInterval(timerRef.current);
         } catch (error) {
             console.error('Erro ao finalizar sessão:', error);
@@ -119,7 +122,7 @@ export default function SessionController() {
         if (!selectedProgram || !currentSession) return;
 
         setLastResult(result);
-        setTimeout(() => setLastResult(null), 600);
+        setTimeout(() => setLastResult(null), 500);
 
         const trial = {
             sessionId: currentSession.id,
@@ -136,7 +139,7 @@ export default function SessionController() {
                 const newStreak = consecutiveCorrect + 1;
                 setConsecutiveCorrect(newStreak);
 
-                if (newStreak >= 3) {
+                if (newStreak >= 3 && newStreak % 3 === 0) {
                     triggerCelebration();
                 }
             } else {
@@ -153,8 +156,9 @@ export default function SessionController() {
     };
 
     const getCurrentStats = () => {
-        const total = trials.filter(t => t.programId === selectedProgram?.id).length;
-        const correct = trials.filter(t => t.programId === selectedProgram?.id && t.result === TrialResult.CORRECT).length;
+        const programTrials = trials.filter(t => t.programId === selectedProgram?.id);
+        const total = programTrials.length;
+        const correct = programTrials.filter(t => t.result === TrialResult.CORRECT).length;
         const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
         return { total, correct, accuracy };
     };
@@ -163,105 +167,110 @@ export default function SessionController() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 rounded-full animate-spin" />
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 rounded-full animate-spin" />
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Carregando...</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="max-w-3xl mx-auto px-4 py-4 min-h-screen">
+        <div className="max-w-2xl mx-auto px-4 py-4 pb-24 lg:pb-6 min-h-screen">
 
-            {/* Celebração */}
+            {/* === CELEBRAÇÃO === */}
             <AnimatePresence>
                 {showCelebration && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.5 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.5 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
                     >
                         <div className="text-center">
                             <motion.div
-                                animate={{ rotate: [0, -10, 10, 0] }}
-                                transition={{ repeat: 2, duration: 0.3 }}
+                                animate={{ rotate: [0, -15, 15, -10, 10, 0], scale: [1, 1.2, 1] }}
+                                transition={{ duration: 0.6 }}
                                 className="text-8xl mb-4"
                             >
                                 🎉
                             </motion.div>
-                            <h2 className="text-2xl font-bold text-white">Excelente!</h2>
-                            <p className="text-white/80">{consecutiveCorrect} acertos seguidos!</p>
+                            <h2 className="text-3xl font-bold text-white mb-2">Excelente!</h2>
+                            <p className="text-white/80 text-lg">{consecutiveCorrect} acertos seguidos!</p>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Header da Sessão */}
+            {/* === HEADER DA SESSÃO ATIVA === */}
             {sessionActive && (
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-4 mb-4 text-white shadow-lg"
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 rounded-2xl p-4 mb-5 text-white shadow-lg shadow-blue-600/20"
                 >
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
-                                <Clock size={20} />
-                                <span className="text-2xl font-mono font-bold">{formatTime(sessionTime)}</span>
+                                <Clock size={20} className="opacity-80" />
+                                <span className="text-3xl font-mono font-bold tracking-tight">{formatTime(sessionTime)}</span>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-5">
                             <div className="text-center">
-                                <div className="font-bold text-lg">{trials.length}</div>
+                                <div className="font-bold text-xl">{trials.length}</div>
                                 <div className="text-white/70 text-xs">Tentativas</div>
                             </div>
                             <div className="text-center">
-                                <div className="font-bold text-lg">{stats.accuracy}%</div>
+                                <div className="font-bold text-xl">{stats.accuracy}%</div>
                                 <div className="text-white/70 text-xs">Acerto</div>
                             </div>
+                            <button
+                                onClick={handleEndSession}
+                                className="p-2.5 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition-colors"
+                            >
+                                <StopCircle size={24} />
+                            </button>
                         </div>
-                        <button
-                            onClick={handleEndSession}
-                            className="p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors"
-                        >
-                            <StopCircle size={24} />
-                        </button>
                     </div>
                 </motion.div>
             )}
 
-            {/* Estado: Sessão NÃO ativa */}
+            {/* === SESSÃO NÃO ATIVA === */}
             {!sessionActive && (
                 <div className="space-y-6">
                     <PageHeader
                         title="Nova Sessão"
-                        subtitle="Inicie uma sessão de treino"
+                        subtitle="Inicie uma sessão de treino ABA"
                     />
 
                     {programs.length === 0 ? (
                         <EmptyState
                             icon={Target}
                             title="Nenhum programa ativo"
-                            description="Você precisa ter programas ativos para iniciar uma sessão."
+                            description="Você precisa ter programas ativos para iniciar uma sessão de treino."
                         />
                     ) : (
                         <>
-                            <Button
-                                onClick={handleStartSession}
-                                size="lg"
-                                className="w-full py-5"
-                            >
-                                <PlayCircle size={24} />
-                                Iniciar Sessão
-                            </Button>
+                            <motion.div whileTap={{ scale: 0.98 }}>
+                                <Button
+                                    onClick={handleStartSession}
+                                    size="lg"
+                                    className="w-full py-6 text-lg"
+                                >
+                                    <PlayCircle size={26} />
+                                    Iniciar Sessão
+                                </Button>
+                            </motion.div>
 
                             <div>
-                                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                                    Programas Disponíveis
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
+                                    {programs.length} Programa{programs.length !== 1 ? 's' : ''} Disponíve{programs.length !== 1 ? 'is' : 'l'}
                                 </h3>
-                                <div className="space-y-2">
+                                <div className="space-y-2.5">
                                     {programs.map(program => (
-                                        <Card key={program.id} className="p-3">
+                                        <Card key={program.id} className="p-3.5" hover={false}>
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <Badge variant={
@@ -269,11 +278,11 @@ export default function SessionController() {
                                                             program.category === 'TACT' ? 'success' :
                                                                 program.category === 'RECEPTIVO' ? 'warning' : 'neutral'
                                                     } size="sm">
-                                                        {program.category}
+                                                        {program.category || 'Geral'}
                                                     </Badge>
                                                     <span className="font-medium text-slate-800 dark:text-white">{program.name}</span>
                                                 </div>
-                                                <span className="text-xs text-slate-400">
+                                                <span className="text-xs text-slate-400 dark:text-slate-500">
                                                     Meta: {program.targetAccuracy || 80}%
                                                 </span>
                                             </div>
@@ -286,23 +295,26 @@ export default function SessionController() {
                 </div>
             )}
 
-            {/* Estado: Sessão ATIVA */}
+            {/* === SESSÃO ATIVA === */}
             {sessionActive && (
-                <div className="space-y-4">
+                <div className="space-y-5">
 
-                    {/* Seleção de Programa */}
+                    {/* SELEÇÃO DE PROGRAMA */}
                     {!selectedProgram && (
-                        <div>
-                            <h3 className="font-semibold text-slate-800 dark:text-white mb-3">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                        >
+                            <h3 className="font-semibold text-slate-800 dark:text-white mb-3 text-lg">
                                 Selecione um Programa
                             </h3>
-                            <div className="grid grid-cols-1 gap-2">
+                            <div className="grid grid-cols-1 gap-2.5">
                                 {programs.map(program => (
                                     <motion.button
                                         key={program.id}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => setSelectedProgram(program)}
-                                        className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-left hover:border-blue-500 transition-all"
+                                        className="p-4 rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-left hover:border-blue-400 dark:hover:border-blue-500 active:border-blue-500 transition-all shadow-sm"
                                     >
                                         <div className="flex items-center justify-between">
                                             <div>
@@ -311,144 +323,149 @@ export default function SessionController() {
                                                         program.category === 'TACT' ? 'success' :
                                                             program.category === 'RECEPTIVO' ? 'warning' : 'neutral'
                                                 } size="sm">
-                                                    {program.category}
+                                                    {program.category || 'Geral'}
                                                 </Badge>
                                                 <h4 className="font-semibold text-slate-800 dark:text-white mt-2">{program.name}</h4>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{program.description}</p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">{program.description}</p>
                                             </div>
                                             <ChevronRight className="text-slate-400" />
                                         </div>
                                     </motion.button>
                                 ))}
                             </div>
-                        </div>
+                        </motion.div>
                     )}
 
-                    {/* Interface de Registro de Tentativas */}
+                    {/* INTERFACE DE REGISTRO */}
                     {selectedProgram && (
                         <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="space-y-4"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="space-y-5"
                         >
-                            {/* Programa atual */}
-                            <Card className="p-3">
+                            {/* Programa Atual */}
+                            <Card className="p-4" hover={false}>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <Badge variant="primary" size="sm">{selectedProgram.category}</Badge>
-                                        <h4 className="font-bold text-slate-800 dark:text-white mt-1">{selectedProgram.name}</h4>
+                                        <Badge variant="primary" size="sm">{selectedProgram.category || 'Geral'}</Badge>
+                                        <h4 className="font-bold text-slate-800 dark:text-white mt-1.5 text-lg">{selectedProgram.name}</h4>
                                     </div>
                                     <button
                                         onClick={() => setSelectedProgram(null)}
-                                        className="text-sm text-blue-600 font-medium"
+                                        className="flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline"
                                     >
+                                        <RotateCcw size={14} />
                                         Trocar
                                     </button>
                                 </div>
 
-                                <div className="mt-3">
+                                <div className="mt-4">
                                     <ProgressBar
                                         value={stats.accuracy}
                                         max={100}
                                         color={stats.accuracy >= 80 ? "success" : stats.accuracy >= 50 ? "warning" : "primary"}
+                                        size="md"
                                     />
-                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
+                                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-2">
                                         <span>{stats.correct}/{stats.total} corretas</span>
-                                        <span>{stats.accuracy}% de acerto</span>
+                                        <span className="font-semibold">{stats.accuracy}% de acerto</span>
                                     </div>
                                 </div>
                             </Card>
 
                             {/* Streak */}
                             {consecutiveCorrect > 0 && (
-                                <div className="flex items-center justify-center gap-2 text-amber-600 dark:text-amber-400">
-                                    <Zap size={18} />
-                                    <span className="font-bold">{consecutiveCorrect} acertos seguidos!</span>
-                                </div>
+                                <motion.div
+                                    initial={{ scale: 0.9, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    className="flex items-center justify-center gap-2 py-2 px-4 bg-amber-100 dark:bg-amber-900/30 rounded-xl"
+                                >
+                                    <Zap size={20} className="text-amber-600 dark:text-amber-400" />
+                                    <span className="font-bold text-amber-700 dark:text-amber-300">{consecutiveCorrect} acertos seguidos!</span>
+                                </motion.div>
                             )}
 
-                            {/* Feedback Visual do Último Resultado */}
+                            {/* Feedback Visual */}
                             <AnimatePresence>
                                 {lastResult && (
                                     <motion.div
-                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        initial={{ opacity: 0, scale: 0.6 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.8 }}
+                                        exit={{ opacity: 0, scale: 0.6 }}
                                         className={`
                                             fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40
-                                            w-32 h-32 rounded-full flex items-center justify-center
-                                            ${lastResult === TrialResult.CORRECT
-                                                ? 'bg-green-600'
-                                                : 'bg-red-600'
-                                            }
+                                            w-36 h-36 rounded-full flex items-center justify-center shadow-2xl
+                                            ${lastResult === TrialResult.CORRECT ? 'bg-emerald-500' : 'bg-red-500'}
                                         `}
                                     >
                                         {lastResult === TrialResult.CORRECT
-                                            ? <Check size={64} className="text-white" />
-                                            : <X size={64} className="text-white" />
+                                            ? <Check size={72} className="text-white" strokeWidth={3} />
+                                            : <X size={72} className="text-white" strokeWidth={3} />
                                         }
                                     </motion.div>
                                 )}
                             </AnimatePresence>
 
-                            {/* BOTÕES DE RESPOSTA - GRANDES PARA TOUCH */}
-                            <div className="mt-6 space-y-3">
-                                <h3 className="text-center font-semibold text-slate-600 dark:text-slate-300 mb-4">
+                            {/* === BOTÕES DE RESPOSTA === */}
+                            <div className="space-y-3">
+                                <h3 className="text-center font-semibold text-slate-600 dark:text-slate-300">
                                     Registrar Resposta
                                 </h3>
 
-                                {/* Botão CORRETO - Grande e Verde */}
+                                {/* BOTÃO CORRETO */}
                                 <motion.button
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => handleTrialResponse(TrialResult.CORRECT)}
-                                    className="w-full py-8 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-bold text-xl shadow-lg shadow-green-600/30 transition-all flex items-center justify-center gap-3"
+                                    className="w-full py-10 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-2xl shadow-lg shadow-emerald-500/30 hover:shadow-xl transition-all flex items-center justify-center gap-3"
                                 >
-                                    <Check size={32} />
+                                    <Check size={36} strokeWidth={3} />
                                     CORRETO
                                 </motion.button>
 
-                                {/* Linha com Incorreto e Sem Resposta */}
+                                {/* INCORRETO E SEM RESPOSTA */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <motion.button
                                         whileTap={{ scale: 0.95 }}
                                         onClick={() => handleTrialResponse(TrialResult.INCORRECT)}
-                                        className="py-6 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-lg shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2"
+                                        className="py-7 rounded-2xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-bold text-lg shadow-lg shadow-red-500/30 transition-all flex items-center justify-center gap-2"
                                     >
-                                        <X size={24} />
+                                        <X size={26} strokeWidth={3} />
                                         Incorreto
                                     </motion.button>
 
                                     <motion.button
                                         whileTap={{ scale: 0.95 }}
                                         onClick={() => handleTrialResponse(TrialResult.NO_RESPONSE)}
-                                        className="py-6 rounded-2xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-bold text-lg border border-slate-300 dark:border-slate-600 transition-all flex items-center justify-center gap-2"
+                                        className="py-7 rounded-2xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 active:bg-slate-400 dark:active:bg-slate-500 text-slate-700 dark:text-white font-bold text-lg border-2 border-slate-300 dark:border-slate-600 transition-all flex items-center justify-center gap-2"
                                     >
-                                        <Pause size={24} />
+                                        <Pause size={26} />
                                         Sem Resp.
                                     </motion.button>
                                 </div>
                             </div>
 
-                            {/* Histórico Recente */}
+                            {/* HISTÓRICO RECENTE */}
                             {trials.filter(t => t.programId === selectedProgram.id).length > 0 && (
-                                <div className="mt-6">
-                                    <h4 className="text-sm font-semibold text-slate-400 mb-2">Últimas tentativas</h4>
+                                <div className="pt-4">
+                                    <h4 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-3">Últimas tentativas</h4>
                                     <div className="flex gap-1.5 flex-wrap">
-                                        {trials.filter(t => t.programId === selectedProgram.id).slice(-20).map((trial, idx) => (
-                                            <div
+                                        {trials.filter(t => t.programId === selectedProgram.id).slice(-15).map((trial, idx) => (
+                                            <motion.div
                                                 key={idx}
+                                                initial={{ scale: 0 }}
+                                                animate={{ scale: 1 }}
                                                 className={`
-                                                    w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold
+                                                    w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm font-bold
                                                     ${trial.result === TrialResult.CORRECT
-                                                        ? 'bg-green-600'
+                                                        ? 'bg-emerald-500'
                                                         : trial.result === TrialResult.INCORRECT
-                                                            ? 'bg-red-600'
-                                                            : 'bg-slate-400'
+                                                            ? 'bg-red-500'
+                                                            : 'bg-slate-400 dark:bg-slate-500'
                                                     }
                                                 `}
                                             >
                                                 {trial.result === TrialResult.CORRECT ? '✓' : trial.result === TrialResult.INCORRECT ? '✗' : '–'}
-                                            </div>
+                                            </motion.div>
                                         ))}
                                     </div>
                                 </div>

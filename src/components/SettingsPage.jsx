@@ -1,117 +1,91 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
     Settings,
-    User,
-    Users,
-    Shield,
-    Upload,
-    Calendar,
+    Moon,
+    Sun,
+    Bell,
+    Palette,
     Clock,
-    Activity,
+    User,
+    Save,
     Check,
-    Lock
+    Monitor,
+    Volume2,
+    Vibrate,
+    Shield,
+    Download,
+    Trash2
 } from 'lucide-react';
 import {
+    Card,
+    Button,
+    Input,
+    PageHeader,
+    SectionTitle,
+    Divider,
+    Badge
+} from '@/components/ui';
+import {
     getSettings,
+    updateSettings,
     getPatient,
     savePatient,
-    getTherapists,
+    exportAllData,
+    clearAllData
 } from '@/lib/dataService';
 
-// --- COMPONENTS VISUAL ---
-
-// Input "Dark Glass"
-const GlassInput = ({ label, icon: Icon, type = "text", ...props }) => (
-    <div className="space-y-2">
-        <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">
-            {label}
-        </label>
-        <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
-                {Icon && <Icon size={18} />}
-            </div>
-            <input
-                type={type}
-                {...props}
-                className="w-full pl-11 pr-4 py-4 bg-[#0f172a]/60 border border-slate-700/50 rounded-xl text-white placeholder:text-slate-600 focus:border-blue-500/50 focus:bg-[#0f172a]/80 outline-none transition-all duration-300 font-medium"
-            />
-        </div>
-    </div>
-);
-
-// Textarea "Dark Glass"
-const GlassTextarea = ({ label, ...props }) => (
-    <div className="space-y-2">
-        <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">
-            {label}
-        </label>
-        <textarea
-            {...props}
-            className="w-full px-5 py-4 bg-[#0f172a]/60 border border-slate-700/50 rounded-xl text-white placeholder:text-slate-600 focus:border-blue-500/50 focus:bg-[#0f172a]/80 outline-none transition-all duration-300 font-medium resize-none min-h-[120px]"
-        />
-    </div>
-);
-
-// Tab Button "Neon Glow"
-const TabButton = ({ active, onClick, icon: Icon, label }) => (
-    <button
-        onClick={onClick}
-        className={`relative px-5 py-2.5 rounded-lg flex items-center gap-2.5 font-medium transition-all duration-300 ${active
-                ? 'text-white'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-    >
-        {active && (
-            <motion.div
-                layoutId="activeTabBg"
-                className="absolute inset-0 bg-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.3)] rounded-lg"
-                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-            />
-        )}
-        <span className="relative z-10 flex items-center gap-2">
-            <Icon size={16} />
-            {label}
-        </span>
-    </button>
-);
-
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState('patient');
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-
-    // Dados
+    const [settings, setSettings] = useState({
+        theme: 'light',
+        notifications: true,
+        sounds: true,
+        haptics: true,
+        sessionDuration: 15,
+        trialsPerTarget: 10,
+    });
     const [patient, setPatient] = useState({
         name: '',
         birthDate: '',
-        diagnosis: '',
-        photo: null,
-        notes: '',
-        age: ''
+        diagnosis: ''
     });
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
 
     useEffect(() => {
-        loadData();
+        const loadedSettings = getSettings();
+        if (loadedSettings) setSettings(prev => ({ ...prev, ...loadedSettings }));
+
+        const loadedPatient = getPatient();
+        if (loadedPatient) setPatient(prev => ({ ...prev, ...loadedPatient }));
     }, []);
 
-    const loadData = async () => {
-        try {
-            const patientData = await getPatient();
-            if (patientData) setPatient(prev => ({ ...prev, ...patientData }));
-        } catch (error) {
-            console.error('Erro ao carregar dados:', error);
-        } finally {
-            setLoading(false);
+    const handleToggle = (key) => {
+        const updated = updateSettings({ [key]: !settings[key] });
+        setSettings(updated);
+    };
+
+    const handleThemeChange = (theme) => {
+        const updated = updateSettings({ theme });
+        setSettings(updated);
+
+        document.documentElement.setAttribute('data-theme', theme);
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
         }
     };
 
     const handleSavePatient = async () => {
         setSaving(true);
+        setSaved(false);
         try {
             await savePatient(patient);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2000);
         } catch (error) {
             console.error('Erro ao salvar:', error);
         } finally {
@@ -119,163 +93,286 @@ export default function SettingsPage() {
         }
     };
 
-    if (loading) return <div className="p-10 text-center text-slate-500">Carregando painel...</div>;
+    const handleExportData = () => {
+        try {
+            const data = exportAllData();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `domtea-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Erro ao exportar:', error);
+        }
+    };
+
+    const handleClearData = () => {
+        if (confirm('⚠️ ATENÇÃO: Isso irá apagar TODOS os dados. Essa ação não pode ser desfeita. Deseja continuar?')) {
+            clearAllData();
+            window.location.reload();
+        }
+    };
+
+    const ToggleSwitch = ({ enabled, onClick }) => (
+        <button
+            onClick={onClick}
+            className={`relative w-14 h-8 rounded-full transition-colors ${enabled ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'}`}
+        >
+            <motion.div
+                className="absolute top-1 w-6 h-6 rounded-full bg-white shadow-md"
+                animate={{ x: enabled ? 28 : 4 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+            />
+        </button>
+    );
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-3xl mx-auto px-4 py-6 pb-24 lg:pb-6">
 
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Configurações</h1>
-                    <p className="text-slate-400">Gerencie o sistema e preferências.</p>
-                </div>
+            <PageHeader
+                title="Configurações"
+                subtitle="Personalize sua experiência"
+            />
 
-                {/* Tabs */}
-                <div className="flex bg-[#0f172a]/50 p-1 rounded-xl border border-slate-800 backdrop-blur-sm self-start">
-                    <TabButton active={activeTab === 'patient'} onClick={() => setActiveTab('patient')} icon={User} label="Paciente" />
-                    <TabButton active={activeTab === 'therapists'} onClick={() => setActiveTab('therapists')} icon={Users} label="Equipe" />
-                    <TabButton active={activeTab === 'preferences'} onClick={() => setActiveTab('preferences')} icon={Settings} label="Sistema" />
+            <div className="space-y-6">
+
+                {/* === APARÊNCIA === */}
+                <Card hover={false}>
+                    <SectionTitle>
+                        <Palette size={16} className="inline mr-2 -mt-1" />
+                        Aparência
+                    </SectionTitle>
+
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                        <button
+                            onClick={() => handleThemeChange('light')}
+                            className={`
+                                flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition-all
+                                ${settings.theme === 'light'
+                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-600'
+                                }
+                            `}
+                        >
+                            <Sun size={24} className="text-amber-500" />
+                            <div className="text-left">
+                                <p className="font-semibold text-slate-800 dark:text-white">Claro</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Tema luminoso</p>
+                            </div>
+                        </button>
+
+                        <button
+                            onClick={() => handleThemeChange('dark')}
+                            className={`
+                                flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition-all
+                                ${settings.theme === 'dark'
+                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-600'
+                                }
+                            `}
+                        >
+                            <Moon size={24} className="text-indigo-500" />
+                            <div className="text-left">
+                                <p className="font-semibold text-slate-800 dark:text-white">Escuro</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Menos luz</p>
+                            </div>
+                        </button>
+                    </div>
+                </Card>
+
+                {/* === NOTIFICAÇÕES === */}
+                <Card hover={false}>
+                    <SectionTitle>
+                        <Bell size={16} className="inline mr-2 -mt-1" />
+                        Experiência
+                    </SectionTitle>
+
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between py-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                                    <Bell size={20} className="text-amber-600 dark:text-amber-400" />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-slate-800 dark:text-white">Notificações</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Lembretes de sessão</p>
+                                </div>
+                            </div>
+                            <ToggleSwitch enabled={settings.notifications} onClick={() => handleToggle('notifications')} />
+                        </div>
+
+                        <Divider />
+
+                        <div className="flex items-center justify-between py-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                    <Volume2 size={20} className="text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-slate-800 dark:text-white">Sons</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Feedback sonoro</p>
+                                </div>
+                            </div>
+                            <ToggleSwitch enabled={settings.sounds} onClick={() => handleToggle('sounds')} />
+                        </div>
+
+                        <Divider />
+
+                        <div className="flex items-center justify-between py-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                    <Vibrate size={20} className="text-purple-600 dark:text-purple-400" />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-slate-800 dark:text-white">Vibração</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Feedback tátil</p>
+                                </div>
+                            </div>
+                            <ToggleSwitch enabled={settings.haptics} onClick={() => handleToggle('haptics')} />
+                        </div>
+                    </div>
+                </Card>
+
+                {/* === DADOS DO PACIENTE === */}
+                <Card hover={false}>
+                    <SectionTitle>
+                        <User size={16} className="inline mr-2 -mt-1" />
+                        Dados do Paciente
+                    </SectionTitle>
+
+                    <div className="space-y-4">
+                        <Input
+                            label="Nome"
+                            value={patient.name || ''}
+                            onChange={(e) => setPatient({ ...patient, name: e.target.value })}
+                            placeholder="Nome do paciente"
+                        />
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input
+                                label="Data de Nascimento"
+                                type="date"
+                                value={patient.birthDate || ''}
+                                onChange={(e) => setPatient({ ...patient, birthDate: e.target.value })}
+                            />
+                            <Input
+                                label="Diagnóstico"
+                                value={patient.diagnosis || ''}
+                                onChange={(e) => setPatient({ ...patient, diagnosis: e.target.value })}
+                                placeholder="Ex: TEA"
+                            />
+                        </div>
+
+                        <Button onClick={handleSavePatient} loading={saving} className="w-full">
+                            {saved ? (
+                                <>
+                                    <Check size={18} />
+                                    Salvo!
+                                </>
+                            ) : (
+                                <>
+                                    <Save size={18} />
+                                    Salvar Dados
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </Card>
+
+                {/* === SESSÃO === */}
+                <Card hover={false}>
+                    <SectionTitle>
+                        <Clock size={16} className="inline mr-2 -mt-1" />
+                        Configurações de Sessão
+                    </SectionTitle>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Duração padrão da sessão: <span className="text-blue-600 font-bold">{settings.sessionDuration} min</span>
+                            </label>
+                            <input
+                                type="range"
+                                min="5"
+                                max="60"
+                                step="5"
+                                value={settings.sessionDuration}
+                                onChange={(e) => {
+                                    const updated = updateSettings({ sessionDuration: parseInt(e.target.value) });
+                                    setSettings(updated);
+                                }}
+                                className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                            />
+                            <div className="flex justify-between text-xs text-slate-400 mt-1">
+                                <span>5 min</span>
+                                <span>60 min</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Tentativas por alvo: <span className="text-blue-600 font-bold">{settings.trialsPerTarget}</span>
+                            </label>
+                            <input
+                                type="range"
+                                min="5"
+                                max="20"
+                                step="1"
+                                value={settings.trialsPerTarget}
+                                onChange={(e) => {
+                                    const updated = updateSettings({ trialsPerTarget: parseInt(e.target.value) });
+                                    setSettings(updated);
+                                }}
+                                className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                            />
+                            <div className="flex justify-between text-xs text-slate-400 mt-1">
+                                <span>5</span>
+                                <span>20</span>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* === DADOS === */}
+                <Card hover={false}>
+                    <SectionTitle>
+                        <Shield size={16} className="inline mr-2 -mt-1" />
+                        Dados e Backup
+                    </SectionTitle>
+
+                    <div className="space-y-3">
+                        <Button
+                            variant="secondary"
+                            onClick={handleExportData}
+                            className="w-full"
+                        >
+                            <Download size={18} />
+                            Exportar Todos os Dados
+                        </Button>
+
+                        <Button
+                            variant="danger"
+                            onClick={handleClearData}
+                            className="w-full"
+                        >
+                            <Trash2 size={18} />
+                            Limpar Todos os Dados
+                        </Button>
+                    </div>
+                </Card>
+
+                {/* === VERSÃO === */}
+                <div className="text-center pt-4">
+                    <Badge variant="neutral" size="lg">
+                        DOM TEA v2.0
+                    </Badge>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
+                        Sistema de Acompanhamento Terapêutico
+                    </p>
                 </div>
             </div>
-
-            {/* Main Content Card */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="relative"
-            >
-                {/* Background Glow Effect behind card */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-[2rem] blur-2xl -z-10" />
-
-                <div className="bg-[#1e293b]/80 backdrop-blur-xl border border-slate-700/50 rounded-[2rem] p-8 md:p-10 shadow-2xl overflow-hidden">
-
-                    {activeTab === 'patient' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-
-                            {/* Esquerda: Avatar e Status */}
-                            <div className="lg:col-span-4 flex flex-col items-center text-center space-y-6 border-b lg:border-b-0 lg:border-r border-slate-700/50 pb-8 lg:pb-0 lg:pr-8">
-                                <div className="relative group">
-                                    <div className="w-48 h-48 rounded-full bg-[#0f172a] p-1 border-2 border-slate-700 group-hover:border-blue-500/50 transition-colors shadow-xl">
-                                        <div className="w-full h-full rounded-full overflow-hidden bg-slate-800 flex items-center justify-center relative">
-                                            {patient.photo ? (
-                                                <img src={patient.photo} alt="Paciente" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <User size={64} className="text-slate-600" />
-                                            )}
-                                            {/* Hover Overlay */}
-                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                                                <Upload className="text-white" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="absolute -bottom-2 md:bottom-2 left-1/2 -translate-x-1/2 bg-slate-800 text-xs px-3 py-1 rounded-full border border-slate-700 text-slate-300">
-                                        ID: #PAC-2024
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <h2 className="text-2xl font-bold text-white mb-1">{patient.name || 'Nome do Paciente'}</h2>
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm">
-                                        <Activity size={14} />
-                                        {patient.diagnosis || 'Sem Diagnóstico'}
-                                    </div>
-                                </div>
-
-                                <div className="w-full pt-4">
-                                    <div className="p-4 rounded-xl bg-[#0f172a]/40 border border-slate-800 text-left space-y-2">
-                                        <h4 className="text-xs font-bold uppercase text-slate-500">Resumo</h4>
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-slate-400">Idade:</span>
-                                            <span className="text-white">{patient.age ? `${patient.age} anos` : '--'}</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-slate-400">Início:</span>
-                                            <span className="text-white">Jan 2024</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Direita: Formulário */}
-                            <div className="lg:col-span-8 space-y-8">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-1 h-6 bg-blue-500 rounded-full" />
-                                    <h3 className="text-xl font-bold text-white">Informações Pessoais</h3>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <GlassInput
-                                        label="Nome Completo"
-                                        icon={User}
-                                        value={patient.name || ''}
-                                        onChange={(e) => setPatient({ ...patient, name: e.target.value })}
-                                        placeholder="Ex: João da Silva"
-                                    />
-                                    <GlassInput
-                                        label="Data de Nascimento"
-                                        icon={Calendar}
-                                        type="date"
-                                        value={patient.birthDate || ''}
-                                        onChange={(e) => setPatient({ ...patient, birthDate: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <GlassInput
-                                        label="Diagnóstico Clínico"
-                                        icon={Activity}
-                                        value={patient.diagnosis || ''}
-                                        onChange={(e) => setPatient({ ...patient, diagnosis: e.target.value })}
-                                        placeholder="Ex: TEA Nível 1"
-                                    />
-                                    <GlassInput
-                                        label="Idade"
-                                        icon={Clock}
-                                        type="number"
-                                        value={patient.age || ''}
-                                        onChange={(e) => setPatient({ ...patient, age: e.target.value })}
-                                        placeholder="Ex: 5"
-                                    />
-                                </div>
-
-                                <GlassTextarea
-                                    label="Observações & Notas Médicas"
-                                    value={patient.notes || ''}
-                                    onChange={(e) => setPatient({ ...patient, notes: e.target.value })}
-                                    placeholder="Registe alergias, medicações ou observações importantes..."
-                                />
-
-                                <div className="pt-6 flex justify-end border-t border-slate-700/50 mt-8">
-                                    <button
-                                        onClick={handleSavePatient}
-                                        disabled={saving}
-                                        className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {saving ? 'Salvando...' : (
-                                            <>
-                                                <Check size={20} />
-                                                Salvar Alterações
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab !== 'patient' && (
-                        <div className="py-20 text-center space-y-4">
-                            <div className="inline-flex w-16 h-16 rounded-2xl bg-slate-800 items-center justify-center text-slate-500 mb-4">
-                                <Lock size={32} />
-                            </div>
-                            <h3 className="text-xl font-bold text-white">Módulo em Construção</h3>
-                            <p className="text-slate-400">Esta seção estará disponível em breve com o novo visual.</p>
-                        </div>
-                    )}
-
-                </div>
-            </motion.div>
         </div>
     );
 }

@@ -72,6 +72,9 @@ export default function Sidebar() {
         // Aplica tema
         if (loadedSettings.theme === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
         }
 
         // Detectar mobile
@@ -96,7 +99,14 @@ export default function Sidebar() {
         const newTheme = settings.theme === 'light' ? 'dark' : 'light';
         const updated = updateSettings({ theme: newTheme });
         setSettings(updated);
+
+        // Aplica tanto data-theme quanto classe dark para Tailwind
         document.documentElement.setAttribute('data-theme', newTheme);
+        if (newTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
     };
 
     if (!mounted) return null;

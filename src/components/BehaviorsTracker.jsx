@@ -12,7 +12,8 @@ import {
     Edit2,
     X,
     Check,
-    Calendar
+    Calendar,
+    Trash2
 } from 'lucide-react';
 import {
     Card,
@@ -22,7 +23,8 @@ import {
     Textarea,
     PageHeader,
     StatCard,
-    EmptyState
+    EmptyState,
+    Modal
 } from '@/components/ui';
 import {
     getBehaviors,
@@ -34,16 +36,16 @@ import {
 } from '@/lib/dataService';
 
 const BEHAVIOR_TYPES = [
-    { id: 'ALL', label: 'Todos' },
-    { id: 'reduce', label: 'Reduzir', icon: TrendingDown },
-    { id: 'increase', label: 'Aumentar', icon: TrendingUp },
-    { id: 'monitor', label: 'Monitorar', icon: Eye },
+    { id: 'ALL', label: 'Todos', icon: Activity },
+    { id: 'reduce', label: 'Reduzir', icon: TrendingDown, color: 'error' },
+    { id: 'increase', label: 'Aumentar', icon: TrendingUp, color: 'success' },
+    { id: 'monitor', label: 'Monitorar', icon: Eye, color: 'primary' },
 ];
 
 const PRIORITY_OPTIONS = [
-    { id: 'high', label: 'Alta' },
-    { id: 'medium', label: 'Média' },
-    { id: 'low', label: 'Baixa' },
+    { id: 'high', label: 'Alta', color: 'error' },
+    { id: 'medium', label: 'Média', color: 'warning' },
+    { id: 'low', label: 'Baixa', color: 'neutral' },
 ];
 
 export default function BehaviorsTracker() {
@@ -54,6 +56,7 @@ export default function BehaviorsTracker() {
     const [search, setSearch] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [editingBehavior, setEditingBehavior] = useState(null);
+    const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -81,6 +84,9 @@ export default function BehaviorsTracker() {
     };
 
     const handleSaveBehavior = async () => {
+        if (!formData.name.trim()) return;
+
+        setSaving(true);
         try {
             if (editingBehavior) {
                 await updateBehavior(editingBehavior.id, formData);
@@ -91,6 +97,8 @@ export default function BehaviorsTracker() {
             handleCloseForm();
         } catch (error) {
             console.error('Erro ao salvar comportamento:', error);
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -122,7 +130,7 @@ export default function BehaviorsTracker() {
         setFormData({
             name: behavior.name,
             description: behavior.description || '',
-            type: behavior.type,
+            type: behavior.type || 'reduce',
             priority: behavior.priority || 'medium'
         });
         setShowForm(true);
@@ -168,14 +176,17 @@ export default function BehaviorsTracker() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 rounded-full animate-spin" />
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 rounded-full animate-spin" />
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Carregando...</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="max-w-5xl mx-auto px-4 py-6">
+        <div className="max-w-6xl mx-auto px-4 py-6 pb-24 lg:pb-6">
 
             <PageHeader
                 title="Comportamentos"
@@ -188,7 +199,7 @@ export default function BehaviorsTracker() {
                 }
             />
 
-            {/* Stats Resumo */}
+            {/* === STATS === */}
             <div className="grid grid-cols-3 gap-3 mb-6">
                 <StatCard
                     label="Para Reduzir"
@@ -210,8 +221,8 @@ export default function BehaviorsTracker() {
                 />
             </div>
 
-            {/* Busca e Filtros */}
-            <div className="space-y-3 mb-6">
+            {/* === BUSCA E FILTROS === */}
+            <div className="space-y-4 mb-6">
                 <Input
                     icon={Search}
                     placeholder="Buscar comportamento..."
@@ -225,48 +236,53 @@ export default function BehaviorsTracker() {
                             key={type.id}
                             onClick={() => setActiveFilter(type.id)}
                             className={`
-                                flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all
+                                flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all
                                 ${activeFilter === type.id
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600'
                                 }
                             `}
                         >
-                            {type.icon && <type.icon size={16} />}
+                            <type.icon size={16} />
                             {type.label}
                         </button>
                     ))}
                 </div>
             </div>
 
-            {/* Lista de Comportamentos */}
+            {/* === LISTA === */}
             {filteredBehaviors.length === 0 ? (
                 <EmptyState
                     icon={Activity}
                     title="Nenhum comportamento encontrado"
                     description={search ? "Tente buscar com outros termos" : "Adicione comportamentos para monitorar"}
                     action={
-                        !search && <Button onClick={() => setShowForm(true)} size="sm">Adicionar</Button>
+                        !search && (
+                            <Button onClick={() => setShowForm(true)} size="sm">
+                                <Plus size={16} />
+                                Adicionar
+                            </Button>
+                        )
                     }
                 />
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredBehaviors.map((behavior) => (
+                    {filteredBehaviors.map((behavior, idx) => (
                         <motion.div
                             key={behavior.id}
                             layout
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.05 }}
                         >
                             <Card className="h-full flex flex-col">
+                                {/* Header */}
                                 <div className="flex items-start justify-between mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <Badge
-                                            variant={
-                                                behavior.type === 'reduce' ? 'error' :
-                                                    behavior.type === 'increase' ? 'success' : 'primary'
-                                            }
-                                        >
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <Badge variant={
+                                            behavior.type === 'reduce' ? 'error' :
+                                                behavior.type === 'increase' ? 'success' : 'primary'
+                                        }>
                                             {behavior.type === 'reduce' ? 'Reduzir' :
                                                 behavior.type === 'increase' ? 'Aumentar' : 'Monitorar'}
                                         </Badge>
@@ -280,164 +296,150 @@ export default function BehaviorsTracker() {
                                     </div>
                                     <button
                                         onClick={() => handleEditBehavior(behavior)}
-                                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400"
+                                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 transition-colors"
                                     >
                                         <Edit2 size={14} />
                                     </button>
                                 </div>
 
-                                <h3 className="font-semibold text-slate-800 dark:text-white mb-1">
+                                {/* Content */}
+                                <h3 className="font-semibold text-slate-800 dark:text-white mb-1.5 text-lg">
                                     {behavior.name}
                                 </h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 line-clamp-2 flex-1">
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 line-clamp-2 flex-1 min-h-[40px]">
                                     {behavior.description || 'Sem descrição'}
                                 </p>
 
-                                {/* Estatísticas */}
-                                <div className="grid grid-cols-2 gap-2 mb-4 p-3 bg-slate-100 dark:bg-slate-700 rounded-xl">
+                                {/* Stats */}
+                                <div className="grid grid-cols-2 gap-2 mb-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                                     <div className="text-center">
-                                        <div className="text-lg font-bold text-slate-800 dark:text-white">
+                                        <div className="text-xl font-bold text-slate-800 dark:text-white">
                                             {getTodayCount(behavior.id)}
                                         </div>
-                                        <div className="text-xs text-slate-400">Hoje</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400">Hoje</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-lg font-bold text-slate-800 dark:text-white">
+                                        <div className="text-xl font-bold text-slate-800 dark:text-white">
                                             {getWeekAverage(behavior.id)}
                                         </div>
-                                        <div className="text-xs text-slate-400">Média/dia</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400">Média/dia</div>
                                     </div>
                                 </div>
 
-                                {/* Ação */}
-                                <Button
-                                    onClick={() => handleRecordOccurrence(behavior.id)}
-                                    variant="secondary"
-                                    size="sm"
-                                    className="w-full"
-                                >
-                                    <Plus size={16} />
-                                    Registrar Ocorrência
-                                </Button>
+                                {/* Actions */}
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={() => handleRecordOccurrence(behavior.id)}
+                                        variant="secondary"
+                                        size="sm"
+                                        className="flex-1"
+                                    >
+                                        <Plus size={16} />
+                                        Registrar
+                                    </Button>
+                                    <button
+                                        onClick={() => handleDeleteBehavior(behavior.id)}
+                                        className="p-2.5 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
                             </Card>
                         </motion.div>
                     ))}
                 </div>
             )}
 
-            {/* Modal de Formulário */}
-            <AnimatePresence>
-                {showForm && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-                        onClick={handleCloseForm}
-                    >
-                        <motion.div
-                            initial={{ y: 100, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: 100, opacity: 0 }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto"
-                        >
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl font-bold text-slate-800 dark:text-white">
-                                    {editingBehavior ? 'Editar Comportamento' : 'Novo Comportamento'}
-                                </h2>
+            {/* === MODAL === */}
+            <Modal
+                isOpen={showForm}
+                onClose={handleCloseForm}
+                title={editingBehavior ? 'Editar Comportamento' : 'Novo Comportamento'}
+            >
+                <div className="space-y-5">
+                    <Input
+                        label="Nome do Comportamento"
+                        placeholder="Ex: Autolesão"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
+
+                    <Textarea
+                        label="Descrição"
+                        placeholder="Descreva o comportamento..."
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    />
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2.5">
+                            Tipo de Comportamento
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {BEHAVIOR_TYPES.filter(t => t.id !== 'ALL').map(type => (
                                 <button
-                                    onClick={handleCloseForm}
-                                    className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                                    key={type.id}
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, type: type.id })}
+                                    className={`
+                                        flex flex-col items-center gap-2 p-4 rounded-xl text-sm font-medium transition-all
+                                        ${formData.type === type.id
+                                            ? 'bg-blue-600 text-white shadow-md'
+                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                        }
+                                    `}
                                 >
-                                    <X size={20} className="text-slate-400" />
+                                    <type.icon size={22} />
+                                    {type.label}
                                 </button>
-                            </div>
+                            ))}
+                        </div>
+                    </div>
 
-                            <div className="space-y-4">
-                                <Input
-                                    label="Nome do Comportamento"
-                                    placeholder="Ex: Autolesão"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                />
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2.5">
+                            Prioridade
+                        </label>
+                        <div className="flex gap-2">
+                            {PRIORITY_OPTIONS.map(opt => (
+                                <button
+                                    key={opt.id}
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, priority: opt.id })}
+                                    className={`
+                                        flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-all
+                                        ${formData.priority === opt.id
+                                            ? 'bg-blue-600 text-white shadow-md'
+                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                        }
+                                    `}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
 
-                                <Textarea
-                                    label="Descrição"
-                                    placeholder="Descreva o comportamento..."
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                />
-
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                        Tipo
-                                    </label>
-                                    <div className="flex gap-2">
-                                        {BEHAVIOR_TYPES.filter(t => t.id !== 'ALL').map(type => (
-                                            <button
-                                                key={type.id}
-                                                onClick={() => setFormData({ ...formData, type: type.id })}
-                                                className={`
-                                                    flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-medium transition-all
-                                                    ${formData.type === type.id
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                                                    }
-                                                `}
-                                            >
-                                                {type.icon && <type.icon size={16} />}
-                                                {type.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                        Prioridade
-                                    </label>
-                                    <div className="flex gap-2">
-                                        {PRIORITY_OPTIONS.map(opt => (
-                                            <button
-                                                key={opt.id}
-                                                onClick={() => setFormData({ ...formData, priority: opt.id })}
-                                                className={`
-                                                    flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all
-                                                    ${formData.priority === opt.id
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                                                    }
-                                                `}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3 pt-4">
-                                    <Button
-                                        variant="secondary"
-                                        onClick={handleCloseForm}
-                                        className="flex-1"
-                                    >
-                                        Cancelar
-                                    </Button>
-                                    <Button
-                                        onClick={handleSaveBehavior}
-                                        className="flex-1"
-                                        disabled={!formData.name.trim()}
-                                    >
-                                        <Check size={18} />
-                                        Salvar
-                                    </Button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    <div className="flex gap-3 pt-2">
+                        <Button
+                            variant="secondary"
+                            onClick={handleCloseForm}
+                            className="flex-1"
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={handleSaveBehavior}
+                            className="flex-1"
+                            disabled={!formData.name.trim()}
+                            loading={saving}
+                        >
+                            <Check size={18} />
+                            Salvar
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

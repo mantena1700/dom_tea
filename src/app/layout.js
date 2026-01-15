@@ -91,8 +91,28 @@ export default function RootLayout({ children }) {
 
         {/* Prevent zoom on input focus */}
         <meta name="format-detection" content="telephone=no" />
+
+        {/* Theme initialization script - runs before React hydration */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('domtea_settings');
+                  if (theme) {
+                    var settings = JSON.parse(theme);
+                    if (settings.theme === 'dark') {
+                      document.documentElement.classList.add('dark');
+                      document.documentElement.setAttribute('data-theme', 'dark');
+                    }
+                  }
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
       </head>
-      <body className="antialiased" suppressHydrationWarning>
+      <body className="antialiased bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 min-h-screen" suppressHydrationWarning>
         <Sidebar />
         <main className="main-content">
           {children}
@@ -103,3 +123,4 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
+
