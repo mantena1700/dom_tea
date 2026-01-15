@@ -1890,17 +1890,18 @@ button[class*="bg-primary-50"]:hover {
 }
 
 /* Text Colors - Tema Claro */
+/* Text Colors - Tema Claro */
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-  color: #0F172A !important;
+  color: var(--neutral-900);
 }
 
 p {
-  color: #475569 !important;
+  color: var(--neutral-600);
 }
 
 /* Section/Card Backgrounds */
