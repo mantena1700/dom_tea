@@ -27,6 +27,7 @@ model Patient {
   behaviors   Behavior[]
   checkins    DailyCheckin[]
   programs    Program[]
+  notes       Note[]
 }
 
 // ===== PROGRAMA DE ENSINO =====
@@ -79,6 +80,7 @@ model Session {
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
   trials    Trial[]
   behaviorRecords BehaviorRecord[]
+  notes     Note[]
 }
 
 // ===== TENTATIVA (TRIAL) =====
@@ -161,6 +163,21 @@ model Reinforcer {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ===== NOTAS GERAIS =====
+model Note {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  type      String   @default("general") // general, session, observation
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos opcionais
+  sessionId String?
+  session   Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  patientId String?
+  patient   Patient? @relation(fields: [patientId], references: [id], onDelete: Cascade)
 }
 
 // ===== CONFIGURAÇÕES DO USUÁRIO =====

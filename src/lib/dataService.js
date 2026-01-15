@@ -828,16 +828,101 @@ export const updateSettings = async (settings) => {
 
 // ==================== PROMPTS & REINFORCERS ====================
 export const getPrompts = () => getFromStorage(STORAGE_KEYS.PROMPTS) || seedPrompts;
-export const getReinforcers = () => getFromStorage(STORAGE_KEYS.REINFORCERS) || seedReinforcers;
 
-export const addReinforcer = (reinforcer) => {
-  const reinforcers = getReinforcers();
+export const getReinforcers = () => {
+  return getFromStorage(STORAGE_KEYS.REINFORCERS) || seedReinforcers;
+};
+
+export const getReinforcersAsync = async () => {
+  try {
+    const reinforcers = await fetchAPI('/reinforcers');
+    if (reinforcers) {
+      saveToStorage(STORAGE_KEYS.REINFORCERS, reinforcers);
+      return reinforcers;
+    }
+  } catch (error) {
+    console.error('Error fetching reinforcers:', error);
+  }
+  return getReinforcers();
+};
+
+export const addReinforcer = async (reinforcer) => {
   const newReinforcer = { ...reinforcer, id: uuidv4() };
+
+  // Salva localmente
+  const reinforcers = getReinforcers();
   reinforcers.push(newReinforcer);
   saveToStorage(STORAGE_KEYS.REINFORCERS, reinforcers);
+
+  // Salva no servidor
+  try {
+    const created = await fetchAPI('/reinforcers', {
+      method: 'POST',
+      body: JSON.stringify(reinforcer),
+    });
+
+    // Atualiza com dados do servidor
+    const index = reinforcers.findIndex(r => r.id === newReinforcer.id);
+    if (index !== -1) {
+      reinforcers[index] = created;
+      saveToStorage(STORAGE_KEYS.REINFORCERS, reinforcers);
+      return created;
+    }
+  } catch (error) {
+    console.error('Error saving reinforcer:', error);
+  }
+
   return newReinforcer;
 };
 
+export const deleteReinforcer = async (id) => {
+  const reinforcers = getReinforcers().filter(r => r.id !== id);
+  saveToStorage(STORAGE_KEYS.REINFORCERS, reinforcers);
+
+  try {
+    await fetchAPI(`/reinforcers?id=${id}`, { method: 'DELETE' });
+  } catch (error) {
+    console.error('Error deleting reinforcer:', error);
+  }
+};
+
+// ==================== NOTES ====================
+export const getNotes = () => {
+  return getFromStorage('domtea_notes') || []; // Usando chave temporária ou implementar cache
+};
+
+export const getNotesAsync = async (sessionId = null) => {
+  try {
+    const query = sessionId ? `?sessionId=${sessionId}` : '';
+    const notes = await fetchAPI(`/notes${query}`);
+    return notes;
+  } catch (error) {
+    console.error('Error fetching notes:', error);
+    return [];
+  }
+};
+
+export const addNote = async (note) => {
+  try {
+    const created = await fetchAPI('/notes', {
+      method: 'POST',
+      body: JSON.stringify(note),
+    });
+    return created;
+  } catch (error) {
+    console.error('Error adding note:', error);
+    // Fallback local simples se necessário
+    return { ...note, id: uuidv4(), createdAt: new Date().toISOString() };
+  }
+};
+
+export const deleteNote = async (id) => {
+  try {
+    await fetchAPI(`/notes?id=${id}`, { method: 'DELETE' });
+  } catch (error) {
+    console.error('Error deleting note:', error);
+  }
+};
 // ==================== ANALYTICS ====================
 export const getDashboardStats = () => {
   const sessions = getSessions();
@@ -982,10 +1067,8 @@ export const addTherapist = (t) => t;
 export const updateTherapist = (id, data) => data;
 export const deleteTherapist = (id) => { };
 
-export const getNotes = () => [];
-export const addNote = (note) => ({ ...note, id: uuidv4() });
 export const getNotesBySession = (sessionId) => [];
-export const deleteNote = (id) => { };
+
 
 // ==================== DATA EXPORT/IMPORT ====================
 export const exportAllData = () => {
