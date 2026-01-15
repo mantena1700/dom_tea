@@ -185,7 +185,7 @@ export default function SettingsPage() {
             {/* Page Header */}
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-neutral-800 dark:text-white mb-1">
-                    Configurações & Preferências
+                    CONFIGURAÇÕES v3.0
                 </h1>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">
                     Gerencie o perfil e preferências do sistema.
