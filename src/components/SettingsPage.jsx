@@ -183,41 +183,38 @@ export default function SettingsPage() {
     return (
         <div className="animate-fade-in">
             {/* Page Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-neutral-800 to-neutral-600 dark:from-white dark:to-neutral-400 bg-clip-text text-transparent mb-2">
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold text-neutral-800 dark:text-white mb-1">
                     Configurações
                 </h1>
-                <p className="text-neutral-500 dark:text-neutral-400">
-                    Gerencie o perfil, equipe e preferências do sistema.
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    Gerencie o perfil e preferências do sistema.
                 </p>
             </div>
 
             {/* Tabs - Modern Pill Design */}
-            <div className="flex justify-start mb-8 overflow-x-auto pb-2 scrollbar-hide">
-                <div className="bg-neutral-100/50 dark:bg-neutral-800/50 p-1.5 rounded-2xl flex gap-1 border border-neutral-200/50 dark:border-neutral-700/50 backdrop-blur-sm">
+            <div className="flex justify-start mb-6 overflow-x-auto pb-2 scrollbar-hide">
+                <div className="bg-white dark:bg-neutral-900 p-1 rounded-xl flex gap-1 border border-neutral-200 dark:border-neutral-800 shadow-sm">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`
-                                relative px-6 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 flex items-center gap-2.5
+                                relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2
                                 ${activeTab === tab.id
-                                    ? 'text-white shadow-md'
-                                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-white/50 dark:hover:bg-neutral-700/50'
+                                    ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/20'
+                                    : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800'
                                 }
                             `}
                         >
+                            <tab.icon size={16} />
+                            {tab.label}
                             {activeTab === tab.id && (
                                 <motion.div
-                                    layoutId="activeTab"
-                                    className="absolute inset-0 bg-primary-500 rounded-xl"
-                                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                    layoutId="activeTabIndicator"
+                                    className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary-500 rounded-full"
                                 />
                             )}
-                            <span className="relative z-10 flex items-center gap-2">
-                                <tab.icon size={16} />
-                                {tab.label}
-                            </span>
                         </button>
                     ))}
                 </div>
@@ -243,24 +240,21 @@ export default function SettingsPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="max-w-5xl"
                 >
-                    <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-xl shadow-neutral-200/50 dark:shadow-none overflow-hidden">
-                        <div className="p-6 md:p-8 border-b border-neutral-100 dark:border-neutral-800">
-                            <h2 className="text-xl font-bold flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center text-primary-600">
-                                    <User size={20} />
+                    <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+                        <div className="p-5 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/30 dark:bg-neutral-800/20">
+                            <h2 className="text-lg font-bold flex items-center gap-3 text-neutral-800 dark:text-neutral-100">
+                                <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center text-primary-600">
+                                    <User size={18} />
                                 </div>
                                 Informações do Paciente
                             </h2>
-                            <p className="text-neutral-500 text-sm mt-1 ml-[52px]">
-                                Mantenha os dados pessoais atualizados para relatórios precisos.
-                            </p>
                         </div>
 
-                        <div className="p-6 md:p-8 space-y-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                        <div className="p-6 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                                 <div className="space-y-6">
                                     <div>
-                                        <label className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 block">
+                                        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5 block">
                                             Nome Completo
                                         </label>
                                         <div className="relative">
@@ -269,26 +263,26 @@ export default function SettingsPage() {
                                                 value={patient.name || ''}
                                                 onChange={(e) => setPatient({ ...patient, name: e.target.value })}
                                                 placeholder="Ex: João Silva"
-                                                className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all pl-10"
+                                                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all pl-10"
                                             />
-                                            <User className="w-5 h-5 text-neutral-400 absolute left-3 top-3.5" />
+                                            <User className="w-4 h-4 text-neutral-400 absolute left-3 top-3" />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 block">
+                                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5 block">
                                                 Data Nascimento
                                             </label>
                                             <input
                                                 type="date"
                                                 value={patient.birthDate || ''}
                                                 onChange={(e) => setPatient({ ...patient, birthDate: e.target.value })}
-                                                className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 block">
+                                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5 block">
                                                 Idade (Anos)
                                             </label>
                                             <input
@@ -296,7 +290,7 @@ export default function SettingsPage() {
                                                 value={patient.age || ''}
                                                 onChange={(e) => setPatient({ ...patient, age: e.target.value })}
                                                 placeholder="Ex: 5"
-                                                className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                                             />
                                         </div>
                                     </div>
@@ -304,7 +298,7 @@ export default function SettingsPage() {
 
                                 <div className="space-y-6">
                                     <div>
-                                        <label className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 block">
+                                        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5 block">
                                             Diagnóstico Clínico
                                         </label>
                                         <div className="relative">
@@ -313,21 +307,21 @@ export default function SettingsPage() {
                                                 value={patient.diagnosis || ''}
                                                 onChange={(e) => setPatient({ ...patient, diagnosis: e.target.value })}
                                                 placeholder="Ex: TEA - Nível 1 de Suporte"
-                                                className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all pl-10"
+                                                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all pl-10"
                                             />
-                                            <Activity className="w-5 h-5 text-neutral-400 absolute left-3 top-3.5" />
+                                            <Activity className="w-4 h-4 text-neutral-400 absolute left-3 top-3" />
                                         </div>
                                     </div>
 
                                     <div>
-                                        <label className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 block">
+                                        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5 block">
                                             Observações
                                         </label>
                                         <textarea
                                             value={patient.notes || ''}
                                             onChange={(e) => setPatient({ ...patient, notes: e.target.value })}
                                             placeholder="Informações médicas relevantes, alergias, etc."
-                                            className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none min-h-[120px]"
+                                            className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none min-h-[120px]"
                                         />
                                     </div>
                                 </div>
