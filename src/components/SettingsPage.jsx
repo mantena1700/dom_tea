@@ -182,28 +182,44 @@ export default function SettingsPage() {
     return (
         <div className="animate-fade-in">
             {/* Page Header */}
-            <div className="page-header">
-                <h1 className="page-title flex items-center gap-3">
-                    <Settings className="w-8 h-8 text-neutral-500" />
+            <div className="mb-8">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-neutral-800 to-neutral-600 dark:from-white dark:to-neutral-400 bg-clip-text text-transparent mb-2">
                     Configurações
                 </h1>
-                <p className="page-subtitle">
-                    Gerencie perfis, preferências e dados do sistema.
+                <p className="text-neutral-500 dark:text-neutral-400">
+                    Gerencie o perfil, equipe e preferências do sistema.
                 </p>
             </div>
 
-            {/* Tabs */}
-            <div className="tabs mb-6">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`tab flex items-center gap-2 ${activeTab === tab.id ? 'active' : ''}`}
-                    >
-                        <tab.icon size={18} />
-                        {tab.label}
-                    </button>
-                ))}
+            {/* Tabs - Modern Pill Design */}
+            <div className="flex justify-start mb-8 overflow-x-auto pb-2 scrollbar-hide">
+                <div className="bg-neutral-100/50 dark:bg-neutral-800/50 p-1.5 rounded-2xl flex gap-1 border border-neutral-200/50 dark:border-neutral-700/50 backdrop-blur-sm">
+                    {tabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`
+                                relative px-6 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 flex items-center gap-2.5
+                                ${activeTab === tab.id
+                                    ? 'text-white shadow-md'
+                                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-white/50 dark:hover:bg-neutral-700/50'
+                                }
+                            `}
+                        >
+                            {activeTab === tab.id && (
+                                <motion.div
+                                    layoutId="activeTab"
+                                    className="absolute inset-0 bg-primary-500 rounded-xl"
+                                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                />
+                            )}
+                            <span className="relative z-10 flex items-center gap-2">
+                                <tab.icon size={16} />
+                                {tab.label}
+                            </span>
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Saved Feedback */}
@@ -222,151 +238,201 @@ export default function SettingsPage() {
             {/* Patient Tab */}
             {activeTab === 'patient' && (
                 <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="chart-container max-w-2xl"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="max-w-5xl"
                 >
-                    <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                        <User className="w-5 h-5 text-primary-500" />
-                        Perfil do Paciente
-                    </h2>
-
-                    <div className="space-y-4">
-                        <div>
-                            <label className="input-label">Nome</label>
-                            <input
-                                type="text"
-                                value={patient.name || ''}
-                                onChange={(e) => setPatient({ ...patient, name: e.target.value })}
-                                placeholder="Nome do paciente"
-                                className="input-field"
-                            />
+                    <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-100 dark:border-neutral-800 shadow-xl shadow-neutral-200/50 dark:shadow-none overflow-hidden">
+                        <div className="p-6 md:p-8 border-b border-neutral-100 dark:border-neutral-800">
+                            <h2 className="text-xl font-bold flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center text-primary-600">
+                                    <User size={20} />
+                                </div>
+                                Informações do Paciente
+                            </h2>
+                            <p className="text-neutral-500 text-sm mt-1 ml-[52px]">
+                                Mantenha os dados pessoais atualizados para relatórios precisos.
+                            </p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="input-label">Data de Nascimento</label>
-                                <input
-                                    type="date"
-                                    value={patient.birthDate || ''}
-                                    onChange={(e) => setPatient({ ...patient, birthDate: e.target.value })}
-                                    className="input-field"
-                                />
+                        <div className="p-6 md:p-8 space-y-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 block">
+                                            Nome Completo
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={patient.name || ''}
+                                                onChange={(e) => setPatient({ ...patient, name: e.target.value })}
+                                                placeholder="Ex: João Silva"
+                                                className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all pl-10"
+                                            />
+                                            <User className="w-5 h-5 text-neutral-400 absolute left-3 top-3.5" />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 block">
+                                                Data Nascimento
+                                            </label>
+                                            <input
+                                                type="date"
+                                                value={patient.birthDate || ''}
+                                                onChange={(e) => setPatient({ ...patient, birthDate: e.target.value })}
+                                                className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 block">
+                                                Idade (Anos)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={patient.age || ''}
+                                                onChange={(e) => setPatient({ ...patient, age: e.target.value })}
+                                                placeholder="Ex: 5"
+                                                className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 block">
+                                            Diagnóstico Clínico
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={patient.diagnosis || ''}
+                                                onChange={(e) => setPatient({ ...patient, diagnosis: e.target.value })}
+                                                placeholder="Ex: TEA - Nível 1 de Suporte"
+                                                className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all pl-10"
+                                            />
+                                            <Activity className="w-5 h-5 text-neutral-400 absolute left-3 top-3.5" />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 block">
+                                            Observações
+                                        </label>
+                                        <textarea
+                                            value={patient.notes || ''}
+                                            onChange={(e) => setPatient({ ...patient, notes: e.target.value })}
+                                            placeholder="Informações médicas relevantes, alergias, etc."
+                                            className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none min-h-[120px]"
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <label className="input-label">Idade</label>
-                                <input
-                                    type="number"
-                                    value={patient.age || ''}
-                                    onChange={(e) => setPatient({ ...patient, age: e.target.value })}
-                                    placeholder="Idade"
-                                    className="input-field"
-                                />
-                            </div>
                         </div>
 
-                        <div>
-                            <label className="input-label">Diagnóstico</label>
-                            <input
-                                type="text"
-                                value={patient.diagnosis || ''}
-                                onChange={(e) => setPatient({ ...patient, diagnosis: e.target.value })}
-                                placeholder="Ex: TEA - Nível 1"
-                                className="input-field"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="input-label">Observações</label>
-                            <textarea
-                                value={patient.notes || ''}
-                                onChange={(e) => setPatient({ ...patient, notes: e.target.value })}
-                                placeholder="Informações adicionais importantes..."
-                                className="input-field resize-none"
-                                rows={3}
-                            />
+                        <div className="p-6 md:p-8 bg-neutral-50/50 dark:bg-neutral-800/30 border-t border-neutral-100 dark:border-neutral-800 flex justify-end">
+                            <button
+                                onClick={handleSavePatient}
+                                className="btn-primary px-8 py-3 shadow-lg shadow-primary-500/20 hover:shadow-primary-500/30 transition-all font-semibold text-base"
+                            >
+                                <Save size={20} />
+                                Salvar Alterações
+                            </button>
                         </div>
                     </div>
-
-                    <button onClick={handleSavePatient} className="btn-primary mt-6">
-                        <Save size={18} />
-                        Salvar Perfil
-                    </button>
                 </motion.div>
             )}
 
             {/* Therapists Tab */}
             {activeTab === 'therapists' && (
                 <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="max-w-4xl"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="max-w-5xl"
                 >
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-lg font-semibold flex items-center gap-2">
-                            <Users className="w-5 h-5 text-success-500" />
-                            Equipe Terapêutica
-                        </h2>
-                        <button onClick={() => setShowAddTherapist(true)} className="btn-primary">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 className="text-xl font-bold flex items-center gap-2 mb-1">
+                                <Users className="w-6 h-6 text-success-500" />
+                                Equipe Terapêutica
+                            </h2>
+                            <p className="text-sm text-neutral-500">Gerencie os profissionais que acompanham o paciente.</p>
+                        </div>
+                        <button
+                            onClick={() => setShowAddTherapist(true)}
+                            className="btn-primary shadow-lg shadow-primary-500/20"
+                        >
                             <Plus size={18} />
                             Adicionar Terapeuta
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {therapists.map((therapist) => (
-                            <div key={therapist.id} className="chart-container">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="avatar">
-                                            {therapist.name?.charAt(0) || 'T'}
-                                        </div>
-                                        <div>
-                                            <p className="font-semibold">{therapist.name}</p>
-                                            <p className="text-sm text-neutral-500">{therapist.specialty || 'Terapeuta ABA'}</p>
-                                        </div>
+                            <div key={therapist.id} className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-primary-500/5 to-transparent rounded-bl-full -mr-4 -mt-4 transition-all group-hover:scale-110" />
+
+                                <div className="relative z-10 flex items-start justify-between mb-4">
+                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/50 dark:to-primary-800/50 flex items-center justify-center text-primary-700 dark:text-primary-300 font-bold text-lg shadow-inner">
+                                        {therapist.name?.charAt(0) || 'T'}
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
                                             onClick={() => setEditingTherapist({ ...therapist })}
-                                            className="btn-icon"
+                                            className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-neutral-500 hover:text-primary-500 transition-colors"
+                                            title="Editar"
                                         >
                                             <Edit2 size={16} />
                                         </button>
                                         <button
                                             onClick={() => handleDeleteTherapist(therapist.id)}
-                                            className="btn-icon text-error-500"
+                                            className="p-2 hover:bg-error-50 dark:hover:bg-error-900/30 rounded-lg text-neutral-500 hover:text-error-500 transition-colors"
+                                            title="Excluir"
                                         >
                                             <Trash2 size={16} />
                                         </button>
                                     </div>
                                 </div>
 
-                                {(therapist.email || therapist.phone) && (
-                                    <div className="mt-4 pt-4 border-t border-neutral-200 space-y-2">
+                                <div className="relative z-10">
+                                    <h3 className="font-bold text-lg text-neutral-800 dark:text-neutral-100 mb-1">{therapist.name}</h3>
+                                    <span className="inline-block px-2.5 py-1 rounded-md bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-4">
+                                        {therapist.specialty || 'Terapeuta ABA'}
+                                    </span>
+
+                                    <div className="space-y-2 pt-4 border-t border-neutral-100 dark:border-neutral-800">
                                         {therapist.email && (
-                                            <p className="text-sm flex items-center gap-2 text-neutral-600">
-                                                <Mail size={14} />
-                                                {therapist.email}
+                                            <p className="text-sm flex items-center gap-2.5 text-neutral-600 dark:text-neutral-400">
+                                                <Mail size={14} className="text-neutral-400" />
+                                                <span className="truncate">{therapist.email}</span>
                                             </p>
                                         )}
                                         {therapist.phone && (
-                                            <p className="text-sm flex items-center gap-2 text-neutral-600">
-                                                <Phone size={14} />
+                                            <p className="text-sm flex items-center gap-2.5 text-neutral-600 dark:text-neutral-400">
+                                                <Phone size={14} className="text-neutral-400" />
                                                 {therapist.phone}
                                             </p>
                                         )}
+                                        {!therapist.email && !therapist.phone && (
+                                            <p className="text-sm text-neutral-400 italic">Sem contato cadastrado</p>
+                                        )}
                                     </div>
-                                )}
+                                </div>
                             </div>
                         ))}
 
-                        {therapists.length === 0 && (
-                            <div className="col-span-full text-center py-12 text-neutral-500">
-                                <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                                <p>Nenhum terapeuta cadastrado.</p>
+                        <button
+                            onClick={() => setShowAddTherapist(true)}
+                            className="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed border-neutral-200 dark:border-neutral-800 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-all group min-h-[220px]"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/30 flex items-center justify-center text-neutral-400 group-hover:text-primary-500 transition-all mb-3">
+                                <Plus size={24} />
                             </div>
-                        )}
+                            <p className="font-medium text-neutral-600 dark:text-neutral-300 group-hover:text-primary-600 dark:group-hover:text-primary-400">Adicionar Novo</p>
+                        </button>
                     </div>
 
                     {/* Add Therapist Modal */}
@@ -492,116 +558,142 @@ export default function SettingsPage() {
             {/* Preferences Tab */}
             {activeTab === 'preferences' && (
                 <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="chart-container max-w-2xl"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="max-w-5xl"
                 >
-                    <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                        <Settings className="w-5 h-5 text-warning-500" />
-                        Preferências do Sistema
-                    </h2>
+                    <div className="flex items-center gap-3 mb-8">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-warning-100 to-warning-200 dark:from-warning-900/50 dark:to-warning-800/50 flex items-center justify-center text-warning-700 dark:text-warning-500">
+                            <Settings size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold">Preferências do Sistema</h2>
+                            <p className="text-sm text-neutral-500">Personalize sua experiência de uso.</p>
+                        </div>
+                    </div>
 
-                    <div className="space-y-6">
-                        {/* Theme */}
-                        <div className="flex items-center justify-between p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
-                            <div className="flex items-center gap-3">
-                                {settings.theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-                                <div>
-                                    <p className="font-medium">Tema</p>
-                                    <p className="text-sm text-neutral-500">Aparência do sistema</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Theme Card */}
+                        <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm">
+                            <h3 className="font-semibold mb-4 flex items-center gap-2">
+                                {settings.theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+                                Aparência
+                            </h3>
+                            <div className="flex bg-neutral-100 dark:bg-neutral-800 p-1 rounded-xl">
                                 <button
                                     onClick={() => handleSaveSettings({ theme: 'light' })}
-                                    className={`px-4 py-2 rounded-lg ${settings.theme === 'light' ? 'bg-primary-500 text-white' : 'bg-neutral-200'
+                                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${settings.theme === 'light'
+                                            ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white'
+                                            : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
                                         }`}
                                 >
+                                    <Sun size={16} />
                                     Claro
                                 </button>
                                 <button
                                     onClick={() => handleSaveSettings({ theme: 'dark' })}
-                                    className={`px-4 py-2 rounded-lg ${settings.theme === 'dark' ? 'bg-primary-500 text-white' : 'bg-neutral-200'
+                                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${settings.theme === 'dark'
+                                            ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white'
+                                            : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
                                         }`}
                                 >
+                                    <Moon size={16} />
                                     Escuro
                                 </button>
                             </div>
                         </div>
 
-                        {/* Sound */}
-                        <div className="flex items-center justify-between p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
-                            <div className="flex items-center gap-3">
-                                {settings.soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-                                <div>
-                                    <p className="font-medium">Sons</p>
-                                    <p className="text-sm text-neutral-500">Efeitos sonoros nas sessões</p>
-                                </div>
+                        {/* Sound Card */}
+                        <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <h3 className="font-semibold mb-1 flex items-center gap-2">
+                                    {settings.soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                                    Efeitos Sonoros
+                                </h3>
+                                <p className="text-sm text-neutral-500 mb-4">Feedback auditivo durante as sessões</p>
                             </div>
-                            <button
-                                onClick={() => handleSaveSettings({ soundEnabled: !settings.soundEnabled })}
-                                className={`toggle-switch ${settings.soundEnabled ? 'active' : ''}`}
-                            />
-                        </div>
-
-                        {/* Celebrations */}
-                        <div className="flex items-center justify-between p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
-                            <div className="flex items-center gap-3">
-                                <span className="text-xl">🎉</span>
-                                <div>
-                                    <p className="font-medium">Celebrações</p>
-                                    <p className="text-sm text-neutral-500">Animações de comemoração nos acertos</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => handleSaveSettings({ showCelebrations: !settings.showCelebrations })}
-                                className={`toggle-switch ${settings.showCelebrations ? 'active' : ''}`}
-                            />
-                        </div>
-
-                        {/* Session Duration */}
-                        <div className="p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
-                            <div className="flex items-center gap-3 mb-4">
-                                <Clock className="w-5 h-5" />
-                                <div>
-                                    <p className="font-medium">Duração Padrão de Sessão</p>
-                                    <p className="text-sm text-neutral-500">Tempo estimado por sessão</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <input
-                                    type="range"
-                                    min="15"
-                                    max="120"
-                                    step="15"
-                                    value={settings.sessionDuration || 60}
-                                    onChange={(e) => handleSaveSettings({ sessionDuration: parseInt(e.target.value) })}
-                                    className="flex-1"
-                                />
-                                <span className="font-bold text-xl w-20 text-center">{settings.sessionDuration || 60} min</span>
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                                    {settings.soundEnabled ? 'Ativado' : 'Desativado'}
+                                </span>
+                                <button
+                                    onClick={() => handleSaveSettings({ soundEnabled: !settings.soundEnabled })}
+                                    className={`relative w-12 h-6 rounded-full transition-colors ${settings.soundEnabled ? 'bg-success-500' : 'bg-neutral-200 dark:bg-neutral-700'
+                                        }`}
+                                >
+                                    <span
+                                        className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full shadow transition-transform ${settings.soundEnabled ? 'translate-x-6' : 'translate-x-0'
+                                            }`}
+                                    />
+                                </button>
                             </div>
                         </div>
 
-                        {/* Trials per Program */}
-                        <div className="p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
-                            <div className="flex items-center gap-3 mb-4">
-                                <Calendar className="w-5 h-5" />
-                                <div>
-                                    <p className="font-medium">Tentativas por Programa</p>
-                                    <p className="text-sm text-neutral-500">Quantidade padrão de tentativas</p>
-                                </div>
+                        {/* Celebrations Card */}
+                        <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <h3 className="font-semibold mb-1 flex items-center gap-2">
+                                    🎉 Celebrações
+                                </h3>
+                                <p className="text-sm text-neutral-500 mb-4">Animações de confete ao acertar</p>
                             </div>
-                            <div className="flex items-center gap-4">
-                                <input
-                                    type="range"
-                                    min="5"
-                                    max="20"
-                                    step="1"
-                                    value={settings.trialsPerProgram || 10}
-                                    onChange={(e) => handleSaveSettings({ trialsPerProgram: parseInt(e.target.value) })}
-                                    className="flex-1"
-                                />
-                                <span className="font-bold text-xl w-16 text-center">{settings.trialsPerProgram || 10}</span>
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                                    {settings.showCelebrations ? 'Ativado' : 'Desativado'}
+                                </span>
+                                <button
+                                    onClick={() => handleSaveSettings({ showCelebrations: !settings.showCelebrations })}
+                                    className={`relative w-12 h-6 rounded-full transition-colors ${settings.showCelebrations ? 'bg-primary-500' : 'bg-neutral-200 dark:bg-neutral-700'
+                                        }`}
+                                >
+                                    <span
+                                        className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full shadow transition-transform ${settings.showCelebrations ? 'translate-x-6' : 'translate-x-0'
+                                            }`}
+                                    />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Session Settings Group */}
+                        <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm md:col-span-2 space-y-6">
+                            <h3 className="font-semibold border-b border-neutral-100 dark:border-neutral-800 pb-3">Sessões e Tentativas</h3>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div>
+                                    <div className="flex justify-between mb-2">
+                                        <label className="text-sm font-medium flex items-center gap-2">
+                                            <Clock size={16} /> Duração da Sessão
+                                        </label>
+                                        <span className="text-sm font-bold text-primary-600">{settings.sessionDuration || 60}min</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="15"
+                                        max="120"
+                                        step="15"
+                                        value={settings.sessionDuration || 60}
+                                        onChange={(e) => handleSaveSettings({ sessionDuration: parseInt(e.target.value) })}
+                                        className="w-full h-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                                    />
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between mb-2">
+                                        <label className="text-sm font-medium flex items-center gap-2">
+                                            <Calendar size={16} /> Tentativas / Programa
+                                        </label>
+                                        <span className="text-sm font-bold text-primary-600">{settings.trialsPerProgram || 10}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="5"
+                                        max="20"
+                                        step="1"
+                                        value={settings.trialsPerProgram || 10}
+                                        onChange={(e) => handleSaveSettings({ trialsPerProgram: parseInt(e.target.value) })}
+                                        className="w-full h-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
