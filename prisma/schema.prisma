@@ -15,9 +15,9 @@ model Patient {
   id          String   @id @default(cuid())
   name        String
   birthDate   DateTime?
-  photo       String?
+  photo       String?  @db.Text // Base64 da foto
   diagnosis   String?
-  notes       String?
+  notes       String?  @db.Text
   preferences Json?    // Preferências, reforçadores, etc.
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
