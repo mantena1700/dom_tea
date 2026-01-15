@@ -2369,21 +2369,14 @@ span[style*="color"] {
   -webkit-overflow-scrolling: touch !important;
 }
 
-/* Fix para o layout principal */
-.lg\\:col-span-2 {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 1.5rem !important;
-}
-
-/* Fix para espaçamento do grid de 3 colunas do perfil */
-.grid.grid-cols-1.lg\\:grid-cols-3 {
+/* Fix para layouts de múltiplas colunas */
+.main-grid {
   display: grid !important;
   gap: 1.5rem !important;
 }
 
 @media (min-width: 1024px) {
-  .grid.grid-cols-1.lg\\:grid-cols-3 {
+  .main-grid {
     grid-template-columns: 2fr 1fr !important;
   }
 }
