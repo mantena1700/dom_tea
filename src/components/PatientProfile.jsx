@@ -129,22 +129,47 @@ export default function PatientProfile() {
         const file = event.target.files[0];
         if (!file) return;
 
-        // Validate file type
         if (!file.type.startsWith('image/')) {
             alert('Por favor, selecione uma imagem válida.');
             return;
         }
 
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            alert('A imagem deve ter no máximo 5MB.');
-            return;
-        }
-
+        // Compressão e redimensionamento
         const reader = new FileReader();
         reader.onload = (e) => {
-            setPatient({ ...patient, photo: e.target.result });
-            setShowPhotoModal(false);
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Max dimensions
+                const MAX_WIDTH = 800;
+                const MAX_HEIGHT = 800;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Compress to JPEG 0.7
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                setPatient({ ...patient, photo: compressedBase64 });
+                setShowPhotoModal(false);
+            };
         };
         reader.readAsDataURL(file);
     };
