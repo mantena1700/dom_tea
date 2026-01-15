@@ -128,31 +128,37 @@ export default function DashboardPage() {
     return (
         <div className="animate-fade-in">
             {/* Page Header */}
-            <div className="page-header">
-                <h1 className="page-title">Olá! 👋</h1>
-                <p className="page-subtitle">
-                    Acompanhe o progresso das terapias e insights importantes.
-                </p>
-
-                {/* Check-in Status - Mobile Friendly */}
-                {checkin && (
-                    <div className="mt-5 flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-neutral-800 shadow-sm border border-neutral-100 dark:border-neutral-700">
-                        <span className="text-3xl">{moodEmojis.find(m => m.id === checkin.mood)?.emoji || '😐'}</span>
-                        <div className="flex-1">
-                            <p className="font-semibold text-sm">{patient?.name || 'Paciente'}</p>
-                            <p className="text-xs text-neutral-500 mt-1">{checkin.sleep}h de sono • {healthOptions.find(h => h.id === checkin.health)?.label}</p>
-                        </div>
-                    </div>
-                )}
+            <div className="page-header flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+                <div>
+                    <h1 className="page-title">Olá! 👋</h1>
+                    <p className="page-subtitle mb-4 md:mb-0">
+                        Acompanhe o progresso das terapias e insights importantes.
+                    </p>
+                </div>
 
                 {/* Desktop Only: New Session Button */}
-                <div className="hidden lg:flex mt-4">
-                    <Link href="/session" className="btn-primary">
+                <div className="hidden lg:flex shrink-0">
+                    <Link href="/session" className="btn-primary whitespace-nowrap shadow-lg shadow-primary-500/20">
                         <PlayCircle size={20} />
                         Nova Sessão
                     </Link>
                 </div>
             </div>
+
+            {/* Check-in Status - Mobile Friendly */}
+            {checkin && (
+                <div className="mb-8 flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-neutral-800 shadow-sm border border-neutral-100 dark:border-neutral-700 max-w-md">
+                    <span className="text-3xl filter drop-shadow-sm">{moodEmojis.find(m => m.id === checkin.mood)?.emoji || '😐'}</span>
+                    <div className="flex-1">
+                        <p className="font-semibold text-sm text-neutral-900 dark:text-white">{patient?.name || 'Paciente'}</p>
+                        <p className="text-xs text-neutral-500 mt-1 flex items-center gap-2">
+                            <span>🌙 {checkin.sleep}h sono</span>
+                            <span>•</span>
+                            <span>{healthOptions.find(h => h.id === checkin.health)?.label}</span>
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Stats Grid */}
             <div className="stats-grid">
@@ -317,21 +323,25 @@ export default function DashboardPage() {
                         </div>
 
                         {insights.length > 0 ? (
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 {insights.map((insight, index) => (
                                     <motion.div
                                         key={insight.id}
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.1 }}
-                                        className={`p-4 rounded-lg border-l-4 ${insight.type === 'success' ? 'bg-success-50 border-success-500' :
+                                        className={`p-3 rounded-lg border-l-4 flex flex-col gap-1 ${insight.type === 'success' ? 'bg-success-50 border-success-500' :
                                             insight.type === 'warning' ? 'bg-warning-50 border-warning-500' :
                                                 insight.type === 'celebration' ? 'bg-purple-50 border-purple-500' :
                                                     'bg-primary-50 border-primary-500'
                                             }`}
                                     >
-                                        <p className="font-medium text-sm">{insight.title}</p>
-                                        <p className="text-xs text-neutral-600 mt-2">{insight.description}</p>
+                                        <p className="font-semibold text-sm leading-tight text-neutral-800 dark:text-neutral-200">
+                                            {insight.title}
+                                        </p>
+                                        <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                                            {insight.description}
+                                        </p>
                                     </motion.div>
                                 ))}
                             </div>

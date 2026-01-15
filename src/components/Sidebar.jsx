@@ -305,7 +305,7 @@ export default function Sidebar() {
                                 <Icon size={20} />
                                 <span>{item.label}</span>
                                 {item.href === '/insights' && (
-                                    <span className="ml-auto badge badge-purple text-xs">IA</span>
+                                    <span className="ml-auto px-1.5 py-0.5 rounded-md text-[10px] uppercase font-bold bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300 tracking-wider">IA</span>
                                 )}
                             </Link>
                         );
