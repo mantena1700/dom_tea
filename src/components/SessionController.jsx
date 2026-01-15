@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     PlayCircle,
@@ -10,11 +10,7 @@ import {
     Check,
     X,
     Pause,
-    AlertCircle,
     ChevronRight,
-    RotateCcw,
-    Volume2,
-    Star,
     Zap
 } from 'lucide-react';
 import {
@@ -168,7 +164,7 @@ export default function SessionController() {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="w-10 h-10 border-4 border-[var(--primary-500)]/30 border-t-[var(--primary-500)] rounded-full animate-spin" />
+                <div className="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 rounded-full animate-spin" />
             </div>
         );
     }
@@ -205,7 +201,7 @@ export default function SessionController() {
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-gradient-to-r from-[var(--primary-600)] to-[var(--primary-700)] rounded-2xl p-4 mb-4 text-white shadow-lg"
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-4 mb-4 text-white shadow-lg"
                 >
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
@@ -260,7 +256,7 @@ export default function SessionController() {
                             </Button>
 
                             <div>
-                                <h3 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">
+                                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
                                     Programas Disponíveis
                                 </h3>
                                 <div className="space-y-2">
@@ -275,9 +271,9 @@ export default function SessionController() {
                                                     } size="sm">
                                                         {program.category}
                                                     </Badge>
-                                                    <span className="font-medium text-[var(--text-primary)]">{program.name}</span>
+                                                    <span className="font-medium text-slate-800 dark:text-white">{program.name}</span>
                                                 </div>
-                                                <span className="text-xs text-[var(--text-muted)]">
+                                                <span className="text-xs text-slate-400">
                                                     Meta: {program.targetAccuracy || 80}%
                                                 </span>
                                             </div>
@@ -297,7 +293,7 @@ export default function SessionController() {
                     {/* Seleção de Programa */}
                     {!selectedProgram && (
                         <div>
-                            <h3 className="font-semibold text-[var(--text-primary)] mb-3">
+                            <h3 className="font-semibold text-slate-800 dark:text-white mb-3">
                                 Selecione um Programa
                             </h3>
                             <div className="grid grid-cols-1 gap-2">
@@ -306,7 +302,7 @@ export default function SessionController() {
                                         key={program.id}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => setSelectedProgram(program)}
-                                        className="p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-default)] text-left hover:border-[var(--primary-500)] transition-all"
+                                        className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-left hover:border-blue-500 transition-all"
                                     >
                                         <div className="flex items-center justify-between">
                                             <div>
@@ -317,10 +313,10 @@ export default function SessionController() {
                                                 } size="sm">
                                                     {program.category}
                                                 </Badge>
-                                                <h4 className="font-semibold text-[var(--text-primary)] mt-2">{program.name}</h4>
-                                                <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{program.description}</p>
+                                                <h4 className="font-semibold text-slate-800 dark:text-white mt-2">{program.name}</h4>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{program.description}</p>
                                             </div>
-                                            <ChevronRight className="text-[var(--text-muted)]" />
+                                            <ChevronRight className="text-slate-400" />
                                         </div>
                                     </motion.button>
                                 ))}
@@ -340,11 +336,11 @@ export default function SessionController() {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <Badge variant="primary" size="sm">{selectedProgram.category}</Badge>
-                                        <h4 className="font-bold text-[var(--text-primary)] mt-1">{selectedProgram.name}</h4>
+                                        <h4 className="font-bold text-slate-800 dark:text-white mt-1">{selectedProgram.name}</h4>
                                     </div>
                                     <button
                                         onClick={() => setSelectedProgram(null)}
-                                        className="text-sm text-[var(--primary-500)] font-medium"
+                                        className="text-sm text-blue-600 font-medium"
                                     >
                                         Trocar
                                     </button>
@@ -356,7 +352,7 @@ export default function SessionController() {
                                         max={100}
                                         color={stats.accuracy >= 80 ? "success" : stats.accuracy >= 50 ? "warning" : "primary"}
                                     />
-                                    <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
+                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
                                         <span>{stats.correct}/{stats.total} corretas</span>
                                         <span>{stats.accuracy}% de acerto</span>
                                     </div>
@@ -365,7 +361,7 @@ export default function SessionController() {
 
                             {/* Streak */}
                             {consecutiveCorrect > 0 && (
-                                <div className="flex items-center justify-center gap-2 text-[var(--warning-600)]">
+                                <div className="flex items-center justify-center gap-2 text-amber-600 dark:text-amber-400">
                                     <Zap size={18} />
                                     <span className="font-bold">{consecutiveCorrect} acertos seguidos!</span>
                                 </div>
@@ -382,8 +378,8 @@ export default function SessionController() {
                                             fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40
                                             w-32 h-32 rounded-full flex items-center justify-center
                                             ${lastResult === TrialResult.CORRECT
-                                                ? 'bg-[var(--success-500)]'
-                                                : 'bg-[var(--error-500)]'
+                                                ? 'bg-green-600'
+                                                : 'bg-red-600'
                                             }
                                         `}
                                     >
@@ -397,7 +393,7 @@ export default function SessionController() {
 
                             {/* BOTÕES DE RESPOSTA - GRANDES PARA TOUCH */}
                             <div className="mt-6 space-y-3">
-                                <h3 className="text-center font-semibold text-[var(--text-secondary)] mb-4">
+                                <h3 className="text-center font-semibold text-slate-600 dark:text-slate-300 mb-4">
                                     Registrar Resposta
                                 </h3>
 
@@ -405,7 +401,7 @@ export default function SessionController() {
                                 <motion.button
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => handleTrialResponse(TrialResult.CORRECT)}
-                                    className="w-full py-8 rounded-2xl bg-[var(--success-500)] hover:bg-[var(--success-600)] text-white font-bold text-xl shadow-lg shadow-[var(--success-500)]/30 transition-all flex items-center justify-center gap-3"
+                                    className="w-full py-8 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-bold text-xl shadow-lg shadow-green-600/30 transition-all flex items-center justify-center gap-3"
                                 >
                                     <Check size={32} />
                                     CORRETO
@@ -416,7 +412,7 @@ export default function SessionController() {
                                     <motion.button
                                         whileTap={{ scale: 0.95 }}
                                         onClick={() => handleTrialResponse(TrialResult.INCORRECT)}
-                                        className="py-6 rounded-2xl bg-[var(--error-500)] hover:bg-[var(--error-600)] text-white font-bold text-lg shadow-lg shadow-[var(--error-500)]/30 transition-all flex items-center justify-center gap-2"
+                                        className="py-6 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-lg shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2"
                                     >
                                         <X size={24} />
                                         Incorreto
@@ -425,7 +421,7 @@ export default function SessionController() {
                                     <motion.button
                                         whileTap={{ scale: 0.95 }}
                                         onClick={() => handleTrialResponse(TrialResult.NO_RESPONSE)}
-                                        className="py-6 rounded-2xl bg-[var(--bg-tertiary)] hover:bg-[var(--interactive-hover)] text-[var(--text-primary)] font-bold text-lg border border-[var(--border-default)] transition-all flex items-center justify-center gap-2"
+                                        className="py-6 rounded-2xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-bold text-lg border border-slate-300 dark:border-slate-600 transition-all flex items-center justify-center gap-2"
                                     >
                                         <Pause size={24} />
                                         Sem Resp.
@@ -436,7 +432,7 @@ export default function SessionController() {
                             {/* Histórico Recente */}
                             {trials.filter(t => t.programId === selectedProgram.id).length > 0 && (
                                 <div className="mt-6">
-                                    <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-2">Últimas tentativas</h4>
+                                    <h4 className="text-sm font-semibold text-slate-400 mb-2">Últimas tentativas</h4>
                                     <div className="flex gap-1.5 flex-wrap">
                                         {trials.filter(t => t.programId === selectedProgram.id).slice(-20).map((trial, idx) => (
                                             <div
@@ -444,10 +440,10 @@ export default function SessionController() {
                                                 className={`
                                                     w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold
                                                     ${trial.result === TrialResult.CORRECT
-                                                        ? 'bg-[var(--success-500)]'
+                                                        ? 'bg-green-600'
                                                         : trial.result === TrialResult.INCORRECT
-                                                            ? 'bg-[var(--error-500)]'
-                                                            : 'bg-[var(--neutral-400)]'
+                                                            ? 'bg-red-600'
+                                                            : 'bg-slate-400'
                                                     }
                                                 `}
                                             >

@@ -10,9 +10,7 @@ import {
     Target,
     BookOpen,
     Check,
-    X,
-    ChevronRight,
-    Filter
+    X
 } from 'lucide-react';
 import {
     Card,
@@ -22,7 +20,6 @@ import {
     Textarea,
     ProgressBar,
     PageHeader,
-    TabNav,
     EmptyState
 } from '@/components/ui';
 import {
@@ -34,12 +31,12 @@ import {
 
 const CATEGORIES = [
     { id: 'ALL', label: 'Todos' },
-    { id: 'MAND', label: 'Mand', color: 'primary' },
-    { id: 'TACT', label: 'Tact', color: 'success' },
-    { id: 'RECEPTIVO', label: 'Receptivo', color: 'warning' },
-    { id: 'MOTOR', label: 'Motor', color: 'purple' },
-    { id: 'SOCIAL', label: 'Social', color: 'error' },
-    { id: 'INTRAVERBAL', label: 'Intraverbal', color: 'neutral' },
+    { id: 'MAND', label: 'Mand' },
+    { id: 'TACT', label: 'Tact' },
+    { id: 'RECEPTIVO', label: 'Receptivo' },
+    { id: 'MOTOR', label: 'Motor' },
+    { id: 'SOCIAL', label: 'Social' },
+    { id: 'INTRAVERBAL', label: 'Intraverbal' },
 ];
 
 export default function ProgramsManager() {
@@ -137,7 +134,7 @@ export default function ProgramsManager() {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="w-10 h-10 border-4 border-[var(--primary-500)]/30 border-t-[var(--primary-500)] rounded-full animate-spin" />
+                <div className="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 rounded-full animate-spin" />
             </div>
         );
     }
@@ -174,8 +171,8 @@ export default function ProgramsManager() {
                             className={`
                                 flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all
                                 ${activeCategory === cat.id
-                                    ? 'bg-[var(--primary-500)] text-white'
-                                    : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--interactive-hover)]'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                                 }
                             `}
                         >
@@ -223,17 +220,17 @@ export default function ProgramsManager() {
                                     )}
                                 </div>
 
-                                <h3 className="font-semibold text-[var(--text-primary)] mb-1 line-clamp-1">
+                                <h3 className="font-semibold text-slate-800 dark:text-white mb-1 line-clamp-1">
                                     {program.name}
                                 </h3>
-                                <p className="text-sm text-[var(--text-tertiary)] mb-4 line-clamp-2 flex-1">
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 line-clamp-2 flex-1">
                                     {program.description || 'Sem descrição'}
                                 </p>
 
                                 <div className="mb-4">
                                     <div className="flex justify-between text-xs mb-1">
-                                        <span className="text-[var(--text-muted)]">Progresso</span>
-                                        <span className="font-medium text-[var(--text-secondary)]">
+                                        <span className="text-slate-400">Progresso</span>
+                                        <span className="font-medium text-slate-600 dark:text-slate-300">
                                             {program.currentAccuracy || 0}% / {program.targetAccuracy || 80}%
                                         </span>
                                     </div>
@@ -245,17 +242,17 @@ export default function ProgramsManager() {
                                     />
                                 </div>
 
-                                <div className="flex gap-2 pt-3 border-t border-[var(--border-default)]">
+                                <div className="flex gap-2 pt-3 border-t border-slate-200 dark:border-slate-700">
                                     <button
                                         onClick={() => handleEditProgram(program)}
-                                        className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium text-[var(--primary-500)] hover:bg-[var(--primary-500)]/10 transition-colors"
+                                        className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
                                     >
                                         <Edit2 size={16} />
                                         Editar
                                     </button>
                                     <button
                                         onClick={() => handleDeleteProgram(program.id)}
-                                        className="flex items-center justify-center p-2 rounded-lg text-[var(--error-500)] hover:bg-[var(--error-500)]/10 transition-colors"
+                                        className="flex items-center justify-center p-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
                                     >
                                         <Trash2 size={16} />
                                     </button>
@@ -281,17 +278,17 @@ export default function ProgramsManager() {
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: 100, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-full max-w-lg bg-[var(--bg-card)] rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto"
+                            className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto"
                         >
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl font-bold text-[var(--text-primary)]">
+                                <h2 className="text-xl font-bold text-slate-800 dark:text-white">
                                     {editingProgram ? 'Editar Programa' : 'Novo Programa'}
                                 </h2>
                                 <button
                                     onClick={handleCloseForm}
-                                    className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)]"
+                                    className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
                                 >
-                                    <X size={20} className="text-[var(--text-muted)]" />
+                                    <X size={20} className="text-slate-400" />
                                 </button>
                             </div>
 
@@ -311,7 +308,7 @@ export default function ProgramsManager() {
                                 />
 
                                 <div>
-                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                         Categoria
                                     </label>
                                     <div className="flex flex-wrap gap-2">
@@ -322,8 +319,8 @@ export default function ProgramsManager() {
                                                 className={`
                                                     px-4 py-2 rounded-xl text-sm font-medium transition-all
                                                     ${formData.category === cat.id
-                                                        ? 'bg-[var(--primary-500)] text-white'
-                                                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                                                     }
                                                 `}
                                             >
@@ -334,7 +331,7 @@ export default function ProgramsManager() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                         Meta de Acerto: {formData.targetAccuracy}%
                                     </label>
                                     <input
@@ -344,18 +341,18 @@ export default function ProgramsManager() {
                                         step="5"
                                         value={formData.targetAccuracy}
                                         onChange={(e) => setFormData({ ...formData, targetAccuracy: parseInt(e.target.value) })}
-                                        className="w-full h-2 bg-[var(--bg-tertiary)] rounded-lg appearance-none cursor-pointer accent-[var(--primary-500)]"
+                                        className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
                                     />
                                 </div>
 
                                 <label className="flex items-center gap-3 cursor-pointer">
                                     <div
-                                        className={`w-12 h-7 rounded-full transition-colors ${formData.active ? 'bg-[var(--primary-500)]' : 'bg-[var(--bg-tertiary)]'}`}
+                                        className={`w-12 h-7 rounded-full transition-colors ${formData.active ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'}`}
                                         onClick={() => setFormData({ ...formData, active: !formData.active })}
                                     >
                                         <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform mt-1 ${formData.active ? 'translate-x-6' : 'translate-x-1'}`} />
                                     </div>
-                                    <span className="text-sm font-medium text-[var(--text-secondary)]">
+                                    <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
                                         Programa Ativo
                                     </span>
                                 </label>

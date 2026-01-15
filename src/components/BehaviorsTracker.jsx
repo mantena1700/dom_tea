@@ -8,10 +8,8 @@ import {
     TrendingUp,
     TrendingDown,
     Activity,
-    AlertTriangle,
     Eye,
     Edit2,
-    Trash2,
     X,
     Check,
     Calendar
@@ -37,15 +35,15 @@ import {
 
 const BEHAVIOR_TYPES = [
     { id: 'ALL', label: 'Todos' },
-    { id: 'reduce', label: 'Reduzir', icon: TrendingDown, color: 'error' },
-    { id: 'increase', label: 'Aumentar', icon: TrendingUp, color: 'success' },
-    { id: 'monitor', label: 'Monitorar', icon: Eye, color: 'primary' },
+    { id: 'reduce', label: 'Reduzir', icon: TrendingDown },
+    { id: 'increase', label: 'Aumentar', icon: TrendingUp },
+    { id: 'monitor', label: 'Monitorar', icon: Eye },
 ];
 
 const PRIORITY_OPTIONS = [
-    { id: 'high', label: 'Alta', color: 'error' },
-    { id: 'medium', label: 'Média', color: 'warning' },
-    { id: 'low', label: 'Baixa', color: 'neutral' },
+    { id: 'high', label: 'Alta' },
+    { id: 'medium', label: 'Média' },
+    { id: 'low', label: 'Baixa' },
 ];
 
 export default function BehaviorsTracker() {
@@ -171,7 +169,7 @@ export default function BehaviorsTracker() {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="w-10 h-10 border-4 border-[var(--primary-500)]/30 border-t-[var(--primary-500)] rounded-full animate-spin" />
+                <div className="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 rounded-full animate-spin" />
             </div>
         );
     }
@@ -229,8 +227,8 @@ export default function BehaviorsTracker() {
                             className={`
                                 flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all
                                 ${activeFilter === type.id
-                                    ? 'bg-[var(--primary-500)] text-white'
-                                    : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--interactive-hover)]'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                                 }
                             `}
                         >
@@ -282,32 +280,32 @@ export default function BehaviorsTracker() {
                                     </div>
                                     <button
                                         onClick={() => handleEditBehavior(behavior)}
-                                        className="p-1.5 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)]"
+                                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400"
                                     >
                                         <Edit2 size={14} />
                                     </button>
                                 </div>
 
-                                <h3 className="font-semibold text-[var(--text-primary)] mb-1">
+                                <h3 className="font-semibold text-slate-800 dark:text-white mb-1">
                                     {behavior.name}
                                 </h3>
-                                <p className="text-sm text-[var(--text-tertiary)] mb-4 line-clamp-2 flex-1">
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 line-clamp-2 flex-1">
                                     {behavior.description || 'Sem descrição'}
                                 </p>
 
                                 {/* Estatísticas */}
-                                <div className="grid grid-cols-2 gap-2 mb-4 p-3 bg-[var(--bg-tertiary)] rounded-xl">
+                                <div className="grid grid-cols-2 gap-2 mb-4 p-3 bg-slate-100 dark:bg-slate-700 rounded-xl">
                                     <div className="text-center">
-                                        <div className="text-lg font-bold text-[var(--text-primary)]">
+                                        <div className="text-lg font-bold text-slate-800 dark:text-white">
                                             {getTodayCount(behavior.id)}
                                         </div>
-                                        <div className="text-xs text-[var(--text-muted)]">Hoje</div>
+                                        <div className="text-xs text-slate-400">Hoje</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-lg font-bold text-[var(--text-primary)]">
+                                        <div className="text-lg font-bold text-slate-800 dark:text-white">
                                             {getWeekAverage(behavior.id)}
                                         </div>
-                                        <div className="text-xs text-[var(--text-muted)]">Média/dia</div>
+                                        <div className="text-xs text-slate-400">Média/dia</div>
                                     </div>
                                 </div>
 
@@ -342,17 +340,17 @@ export default function BehaviorsTracker() {
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: 100, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-full max-w-lg bg-[var(--bg-card)] rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto"
+                            className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto"
                         >
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl font-bold text-[var(--text-primary)]">
+                                <h2 className="text-xl font-bold text-slate-800 dark:text-white">
                                     {editingBehavior ? 'Editar Comportamento' : 'Novo Comportamento'}
                                 </h2>
                                 <button
                                     onClick={handleCloseForm}
-                                    className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)]"
+                                    className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
                                 >
-                                    <X size={20} className="text-[var(--text-muted)]" />
+                                    <X size={20} className="text-slate-400" />
                                 </button>
                             </div>
 
@@ -372,7 +370,7 @@ export default function BehaviorsTracker() {
                                 />
 
                                 <div>
-                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                         Tipo
                                     </label>
                                     <div className="flex gap-2">
@@ -383,8 +381,8 @@ export default function BehaviorsTracker() {
                                                 className={`
                                                     flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-medium transition-all
                                                     ${formData.type === type.id
-                                                        ? 'bg-[var(--primary-500)] text-white'
-                                                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                                                     }
                                                 `}
                                             >
@@ -396,7 +394,7 @@ export default function BehaviorsTracker() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                         Prioridade
                                     </label>
                                     <div className="flex gap-2">
@@ -407,8 +405,8 @@ export default function BehaviorsTracker() {
                                                 className={`
                                                     flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all
                                                     ${formData.priority === opt.id
-                                                        ? 'bg-[var(--primary-500)] text-white'
-                                                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                                                     }
                                                 `}
                                             >

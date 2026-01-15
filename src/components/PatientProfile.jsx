@@ -8,17 +8,12 @@ import {
     Calendar,
     Heart,
     Star,
-    Edit2,
-    Save,
     Plus,
     X,
-    Stethoscope,
     Pill,
     AlertCircle,
     Activity,
     FileText,
-    Settings,
-    ChevronRight,
     Check
 } from 'lucide-react';
 import {
@@ -30,7 +25,6 @@ import {
     PageHeader,
     TabNav,
     SectionTitle,
-    Divider,
     EmptyState
 } from '@/components/ui';
 import {
@@ -166,7 +160,7 @@ export default function PatientProfile() {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="w-10 h-10 border-4 border-[var(--primary-500)]/30 border-t-[var(--primary-500)] rounded-full animate-spin" />
+                <div className="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 rounded-full animate-spin" />
             </div>
         );
     }
@@ -180,12 +174,12 @@ export default function PatientProfile() {
                 <div className="relative">
                     <div
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-28 h-28 rounded-full bg-[var(--bg-tertiary)] border-4 border-[var(--bg-card)] shadow-xl overflow-hidden cursor-pointer group"
+                        className="w-28 h-28 rounded-full bg-slate-200 dark:bg-slate-700 border-4 border-white dark:border-slate-800 shadow-xl overflow-hidden cursor-pointer group"
                     >
                         {patient.photo ? (
                             <img src={patient.photo} alt="Foto" className="w-full h-full object-cover" />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[var(--text-muted)]">
+                            <div className="w-full h-full flex items-center justify-center text-slate-400">
                                 <User size={40} />
                             </div>
                         )}
@@ -204,7 +198,7 @@ export default function PatientProfile() {
 
                 {/* Info */}
                 <div className="text-center sm:text-left flex-1">
-                    <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
                         {patient.name || 'Nome do Paciente'}
                     </h1>
                     <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
@@ -316,7 +310,7 @@ export default function PatientProfile() {
                                         </Badge>
                                     ))}
                                     {(!patient.allergies || patient.allergies.length === 0) && (
-                                        <span className="text-sm text-[var(--text-muted)]">Nenhuma alergia registrada</span>
+                                        <span className="text-sm text-slate-400">Nenhuma alergia registrada</span>
                                     )}
                                 </div>
                             </Card>
@@ -349,7 +343,7 @@ export default function PatientProfile() {
                                         </Badge>
                                     ))}
                                     {(!patient.medications || patient.medications.length === 0) && (
-                                        <span className="text-sm text-[var(--text-muted)]">Nenhum medicamento registrado</span>
+                                        <span className="text-sm text-slate-400">Nenhum medicamento registrado</span>
                                     )}
                                 </div>
                             </Card>
@@ -478,8 +472,8 @@ export default function PatientProfile() {
                                 <div className="space-y-3">
                                     {notes.map((note, idx) => (
                                         <Card key={idx} hover={false}>
-                                            <p className="text-[var(--text-primary)]">{note.content}</p>
-                                            <p className="text-xs text-[var(--text-muted)] mt-2">
+                                            <p className="text-slate-800 dark:text-white">{note.content}</p>
+                                            <p className="text-xs text-slate-400 mt-2">
                                                 {new Date(note.timestamp).toLocaleDateString('pt-BR', {
                                                     day: '2-digit',
                                                     month: 'short',

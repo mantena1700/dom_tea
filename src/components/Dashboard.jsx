@@ -4,37 +4,29 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-    TrendingUp,
-    TrendingDown,
     Target,
-    Clock,
-    Award,
     Activity,
     Brain,
-    Sparkles,
     Play,
     Heart,
     Sun,
     Moon,
-    CloudRain,
     AlertCircle,
     CheckCircle2,
     Smile,
-    Calendar,
     ChevronRight,
-    Zap
+    Zap,
+    Award,
+    Sparkles
 } from 'lucide-react';
 import {
     Card,
-    CardWithHeader,
     StatCard,
     Badge,
     ProgressBar,
     Button,
-    PageHeader,
     SectionTitle,
     EmptyState,
-    ListItem
 } from '@/components/ui';
 import {
     getPatient,
@@ -123,7 +115,7 @@ export default function DashboardPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="w-10 h-10 border-4 border-[var(--primary-500)]/30 border-t-[var(--primary-500)] rounded-full animate-spin" />
+                <div className="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 rounded-full animate-spin" />
             </div>
         );
     }
@@ -137,10 +129,10 @@ export default function DashboardPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="mb-2"
             >
-                <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
+                <h1 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white">
                     Olá! 👋
                 </h1>
-                <p className="text-sm text-[var(--text-tertiary)]">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                     {patient?.name ? `Acompanhando ${patient.name}` : 'Bem-vindo ao DOM TEA'}
                 </p>
             </motion.div>
@@ -173,18 +165,18 @@ export default function DashboardPage() {
                 />
             </div>
 
-            {/* Check-in Diário - Colapsável em Mobile */}
+            {/* Check-in Diário */}
             {!checkinSaved && (
-                <Card className="border-l-4 border-l-[var(--primary-500)]">
+                <Card className="border-l-4 border-l-blue-600">
                     <div className="flex items-center gap-2 mb-4">
-                        <Sun size={20} className="text-[var(--warning-500)]" />
-                        <h3 className="font-bold text-[var(--text-primary)]">Check-in do Dia</h3>
+                        <Sun size={20} className="text-amber-500" />
+                        <h3 className="font-bold text-slate-800 dark:text-white">Check-in do Dia</h3>
                     </div>
 
                     <div className="space-y-4">
                         {/* Sono */}
                         <div>
-                            <label className="text-sm font-medium text-[var(--text-secondary)] mb-2 flex items-center gap-2">
+                            <label className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-2 flex items-center gap-2">
                                 <Moon size={16} />
                                 Horas de Sono: {checkin.sleep}h
                             </label>
@@ -194,13 +186,13 @@ export default function DashboardPage() {
                                 max="12"
                                 value={checkin.sleep}
                                 onChange={(e) => setCheckin({ ...checkin, sleep: parseInt(e.target.value) })}
-                                className="w-full h-2 bg-[var(--bg-tertiary)] rounded-lg appearance-none cursor-pointer accent-[var(--primary-500)]"
+                                className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
                             />
                         </div>
 
                         {/* Humor */}
                         <div>
-                            <label className="text-sm font-medium text-[var(--text-secondary)] mb-2 block">
+                            <label className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-2 block">
                                 <Smile size={16} className="inline mr-2" />
                                 Como está o humor?
                             </label>
@@ -212,13 +204,13 @@ export default function DashboardPage() {
                                         className={`
                                             flex-shrink-0 flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all
                                             ${checkin.mood === mood.id
-                                                ? 'border-[var(--primary-500)] bg-[var(--primary-500)]/10'
-                                                : 'border-[var(--border-default)] bg-[var(--bg-tertiary)]'
+                                                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30'
+                                                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
                                             }
                                         `}
                                     >
                                         <span className="text-2xl">{mood.emoji}</span>
-                                        <span className="text-xs font-medium text-[var(--text-secondary)]">{mood.label}</span>
+                                        <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{mood.label}</span>
                                     </button>
                                 ))}
                             </div>
@@ -226,7 +218,7 @@ export default function DashboardPage() {
 
                         {/* Saúde */}
                         <div>
-                            <label className="text-sm font-medium text-[var(--text-secondary)] mb-2 block">
+                            <label className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-2 block">
                                 <Heart size={16} className="inline mr-2" />
                                 Saúde
                             </label>
@@ -238,8 +230,8 @@ export default function DashboardPage() {
                                         className={`
                                             flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all
                                             ${checkin.health === health.id
-                                                ? 'border-[var(--primary-500)] bg-[var(--primary-500)]/10'
-                                                : 'border-[var(--border-default)] bg-[var(--bg-tertiary)]'
+                                                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30'
+                                                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
                                             }
                                         `}
                                     >
@@ -265,7 +257,7 @@ export default function DashboardPage() {
                 <div className="lg:col-span-2 space-y-4">
                     <div className="flex items-center justify-between">
                         <SectionTitle>Programas em Foco</SectionTitle>
-                        <Link href="/programs" className="text-sm text-[var(--primary-500)] font-medium">
+                        <Link href="/programs" className="text-sm text-blue-600 font-medium">
                             Ver todos
                         </Link>
                     </div>
@@ -294,15 +286,15 @@ export default function DashboardPage() {
                                         }>
                                             {program.category}
                                         </Badge>
-                                        <span className="text-xs text-[var(--text-muted)]">
+                                        <span className="text-xs text-slate-400">
                                             Meta: {program.targetAccuracy || 80}%
                                         </span>
                                     </div>
 
-                                    <h4 className="font-semibold text-[var(--text-primary)] mb-1 line-clamp-1">
+                                    <h4 className="font-semibold text-slate-800 dark:text-white mb-1 line-clamp-1">
                                         {program.name}
                                     </h4>
-                                    <p className="text-xs text-[var(--text-tertiary)] mb-3 line-clamp-1">
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 line-clamp-1">
                                         {program.description || 'Sem descrição'}
                                     </p>
 
@@ -313,8 +305,8 @@ export default function DashboardPage() {
                                         size="sm"
                                     />
                                     <div className="flex justify-between mt-1.5">
-                                        <span className="text-xs text-[var(--text-muted)]">Progresso</span>
-                                        <span className="text-xs font-medium text-[var(--text-secondary)]">
+                                        <span className="text-xs text-slate-400">Progresso</span>
+                                        <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
                                             {program.currentAccuracy || 0}%
                                         </span>
                                     </div>
@@ -329,7 +321,7 @@ export default function DashboardPage() {
                     <SectionTitle>Ação Rápida</SectionTitle>
 
                     <Link href="/session" className="block">
-                        <Card className="bg-gradient-to-br from-[var(--primary-500)] to-[var(--primary-700)] border-none text-white hover:shadow-xl hover:shadow-[var(--primary-500)]/20">
+                        <Card className="bg-gradient-to-br from-blue-600 to-blue-700 border-none text-white hover:shadow-xl hover:shadow-blue-600/20">
                             <div className="flex items-center gap-4">
                                 <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center">
                                     <Play size={28} fill="white" />
@@ -344,20 +336,20 @@ export default function DashboardPage() {
 
                     <Card>
                         <div className="flex items-center gap-3 mb-3">
-                            <Award size={20} className="text-[var(--warning-500)]" />
-                            <h4 className="font-semibold text-[var(--text-primary)]">Conquistas</h4>
+                            <Award size={20} className="text-amber-500" />
+                            <h4 className="font-semibold text-slate-800 dark:text-white">Conquistas</h4>
                         </div>
                         <div className="flex gap-2">
-                            <div className="w-10 h-10 rounded-full bg-[var(--warning-500)]/20 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                                 🏆
                             </div>
-                            <div className="w-10 h-10 rounded-full bg-[var(--success-500)]/20 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
                                 ⭐
                             </div>
-                            <div className="w-10 h-10 rounded-full bg-[var(--primary-500)]/20 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                                 🎯
                             </div>
-                            <Link href="/achievements" className="w-10 h-10 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-muted)]">
+                            <Link href="/achievements" className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400">
                                 <ChevronRight size={18} />
                             </Link>
                         </div>
@@ -367,14 +359,14 @@ export default function DashboardPage() {
                     {activePrograms.length > 0 && (
                         <Card>
                             <div className="flex items-center gap-2 mb-3">
-                                <Sparkles size={18} className="text-[var(--purple-500)]" />
-                                <h4 className="font-semibold text-sm text-[var(--text-primary)]">Sugestão</h4>
+                                <Sparkles size={18} className="text-purple-600" />
+                                <h4 className="font-semibold text-sm text-slate-800 dark:text-white">Sugestão</h4>
                             </div>
-                            <p className="text-xs text-[var(--text-tertiary)] mb-2">
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
                                 Programa que precisa de mais prática:
                             </p>
-                            <div className="flex items-center justify-between p-2 bg-[var(--bg-tertiary)] rounded-lg">
-                                <span className="text-sm font-medium text-[var(--text-primary)]">
+                            <div className="flex items-center justify-between p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                                <span className="text-sm font-medium text-slate-800 dark:text-white">
                                     {activePrograms[0]?.name}
                                 </span>
                                 <Badge variant="warning" size="sm">{activePrograms[0]?.currentAccuracy || 0}%</Badge>
@@ -385,14 +377,14 @@ export default function DashboardPage() {
             </div>
 
             {/* Dica do Dia */}
-            <Card className="bg-gradient-to-r from-[var(--accent-500)]/10 to-[var(--primary-500)]/10 border-[var(--accent-500)]/30">
+            <Card className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border-cyan-200 dark:border-cyan-800">
                 <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[var(--accent-500)]/20 flex items-center justify-center flex-shrink-0">
-                        <Sparkles size={20} className="text-[var(--accent-600)]" />
+                    <div className="w-10 h-10 rounded-xl bg-cyan-100 dark:bg-cyan-900/40 flex items-center justify-center flex-shrink-0">
+                        <Sparkles size={20} className="text-cyan-600 dark:text-cyan-400" />
                     </div>
                     <div>
-                        <h4 className="font-semibold text-[var(--text-primary)] mb-1">Dica do Dia</h4>
-                        <p className="text-sm text-[var(--text-secondary)]">
+                        <h4 className="font-semibold text-slate-800 dark:text-white mb-1">Dica do Dia</h4>
+                        <p className="text-sm text-slate-600 dark:text-slate-300">
                             Sessões curtas e frequentes são mais eficazes que sessões longas esporádicas.
                             Tente manter 4-5 sessões de 15-20 minutos por dia.
                         </p>
