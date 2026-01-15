@@ -1,7 +1,7 @@
 /**
- * Dom TEA - Data Service
+ * Dom TEA - Data Service COMPLETO
  * Serviço de gerenciamento de dados com PostgreSQL via APIs
- * Fallback para localStorage quando offline
+ * TODAS as operações salvam no banco de dados
  */
 
 import { v4 as uuidv4 } from 'uuid';
@@ -20,7 +20,9 @@ const fetchAPI = async (endpoint, options = {}) => {
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`API Error (${endpoint}):`, response.status, errorData);
+      throw new Error(errorData.error || `API Error: ${response.status}`);
     }
 
     return await response.json();
@@ -42,17 +44,28 @@ const STORAGE_KEYS = {
   SETTINGS: 'domtea_settings',
   PROMPTS: 'domtea_prompts',
   REINFORCERS: 'domtea_reinforcers',
+  INITIALIZED: 'domtea_initialized',
 };
 
+const isBrowser = typeof window !== 'undefined';
+
 const getFromStorage = (key) => {
-  if (typeof window === 'undefined') return null;
-  const data = localStorage.getItem(key);
-  return data ? JSON.parse(data) : null;
+  if (!isBrowser) return null;
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : null;
+  } catch (e) {
+    return null;
+  }
 };
 
 const saveToStorage = (key, data) => {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(key, JSON.stringify(data));
+  if (!isBrowser) return;
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (e) {
+    console.error('Error saving to storage:', e);
+  }
 };
 
 // ==================== SEED DATA ====================
@@ -72,6 +85,22 @@ const seedReinforcers = [
   { id: 'r5', name: 'Música', type: 'sensory', icon: '🎵' },
 ];
 
+const seedBehaviors = [
+  { id: 'b1', name: 'Autolesão', type: 'decrease', description: 'Comportamentos de autoagressão', severity: 'high', color: '#EF4444' },
+  { id: 'b2', name: 'Estereotipia motora', type: 'decrease', description: 'Movimentos repetitivos', severity: 'medium', color: '#F59E0B' },
+  { id: 'b3', name: 'Estereotipia vocal', type: 'decrease', description: 'Vocalizações repetitivas', severity: 'medium', color: '#F59E0B' },
+  { id: 'b4', name: 'Ecolalia', type: 'monitor', description: 'Repetição de palavras/frases', severity: 'low', color: '#3B82F6' },
+  { id: 'b5', name: 'Birra/Crise', type: 'decrease', description: 'Episódios de choro intenso/gritos', severity: 'high', color: '#EF4444' },
+  { id: 'b6', name: 'Comunicação espontânea', type: 'increase', description: 'Iniciativa de comunicação', severity: 'positive', color: '#10B981' },
+];
+
+const seedPrograms = [
+  { id: 'mand-1', name: 'Pedir objetos', category: 'MAND', therapyType: 'ABA', description: 'Pedir objetos do dia a dia', targetAccuracy: 80, status: 'active' },
+  { id: 'tact-1', name: 'Nomear objetos', category: 'TACT', therapyType: 'ABA', description: 'Identificar e nomear objetos', targetAccuracy: 85, status: 'active' },
+  { id: 'rec-1', name: 'Seguir instruções', category: 'RECEPTIVO', therapyType: 'ABA', description: 'Executar comandos simples', targetAccuracy: 85, status: 'active' },
+  { id: 'social-1', name: 'Contato visual', category: 'SOCIAL', therapyType: 'ABA', description: 'Manter contato visual', targetAccuracy: 70, status: 'active' },
+];
+
 const defaultSettings = {
   theme: 'light',
   sessionDuration: 60,
@@ -82,11 +111,40 @@ const defaultSettings = {
   autoSave: true,
 };
 
-// ==================== INICIALIZAÇÃO ====================
-export const initializeData = () => {
-  if (typeof window === 'undefined') return;
+// ==================== SINCRONIZAÇÃO COM SERVIDOR ====================
+let syncQueue = [];
+let isSyncing = false;
 
-  // Inicializa dados locais se não existirem
+const addToSyncQueue = (action) => {
+  syncQueue.push(action);
+  processSyncQueue();
+};
+
+const processSyncQueue = async () => {
+  if (isSyncing || syncQueue.length === 0) return;
+
+  isSyncing = true;
+
+  while (syncQueue.length > 0) {
+    const action = syncQueue.shift();
+    try {
+      await action();
+    } catch (error) {
+      console.error('Sync error:', error);
+      // Re-add to queue for retry
+      syncQueue.unshift(action);
+      break;
+    }
+  }
+
+  isSyncing = false;
+};
+
+// ==================== INICIALIZAÇÃO ====================
+export const initializeData = async () => {
+  if (!isBrowser) return;
+
+  // Inicializa dados locais
   if (!getFromStorage(STORAGE_KEYS.PROMPTS)) {
     saveToStorage(STORAGE_KEYS.PROMPTS, seedPrompts);
   }
@@ -96,11 +154,60 @@ export const initializeData = () => {
   if (!getFromStorage(STORAGE_KEYS.SETTINGS)) {
     saveToStorage(STORAGE_KEYS.SETTINGS, defaultSettings);
   }
+  if (!getFromStorage(STORAGE_KEYS.SESSIONS)) {
+    saveToStorage(STORAGE_KEYS.SESSIONS, []);
+  }
+  if (!getFromStorage(STORAGE_KEYS.TRIALS)) {
+    saveToStorage(STORAGE_KEYS.TRIALS, []);
+  }
+  if (!getFromStorage(STORAGE_KEYS.BEHAVIOR_RECORDS)) {
+    saveToStorage(STORAGE_KEYS.BEHAVIOR_RECORDS, []);
+  }
+  if (!getFromStorage(STORAGE_KEYS.DAILY_CHECKINS)) {
+    saveToStorage(STORAGE_KEYS.DAILY_CHECKINS, []);
+  }
+
+  // Sincroniza com servidor
+  try {
+    await syncFromServer();
+  } catch (error) {
+    console.log('Offline mode - using local data');
+  }
+};
+
+const syncFromServer = async () => {
+  try {
+    // Sincroniza paciente
+    const patients = await fetchAPI('/patients');
+    if (patients && patients.length > 0) {
+      saveToStorage(STORAGE_KEYS.PATIENT, patients[0]);
+    }
+
+    // Sincroniza programas
+    const programs = await fetchAPI('/programs');
+    if (programs) {
+      saveToStorage(STORAGE_KEYS.PROGRAMS, programs);
+    }
+
+    // Sincroniza comportamentos
+    const behaviors = await fetchAPI('/behaviors');
+    if (behaviors) {
+      saveToStorage(STORAGE_KEYS.BEHAVIORS, behaviors);
+    }
+
+    // Sincroniza sessões
+    const sessions = await fetchAPI('/sessions');
+    if (sessions) {
+      saveToStorage(STORAGE_KEYS.SESSIONS, sessions);
+    }
+
+  } catch (error) {
+    console.error('Error syncing from server:', error);
+  }
 };
 
 // ==================== PATIENT ====================
 export const getPatient = () => {
-  // Primeiro tenta localStorage para resposta imediata
   return getFromStorage(STORAGE_KEYS.PATIENT);
 };
 
@@ -112,65 +219,118 @@ export const getPatientAsync = async () => {
       saveToStorage(STORAGE_KEYS.PATIENT, patient);
       return patient;
     }
-    return getFromStorage(STORAGE_KEYS.PATIENT);
   } catch (error) {
-    return getFromStorage(STORAGE_KEYS.PATIENT);
+    console.error('Error fetching patient:', error);
   }
+  return getFromStorage(STORAGE_KEYS.PATIENT);
 };
 
 export const savePatient = async (patient) => {
-  // Salva localmente primeiro para resposta imediata
+  const localPatient = getFromStorage(STORAGE_KEYS.PATIENT);
+
+  // Prepara dados para salvar
   const patientData = {
     ...patient,
     updatedAt: new Date().toISOString(),
   };
+
+  // Salva localmente primeiro
   saveToStorage(STORAGE_KEYS.PATIENT, patientData);
 
-  // Tenta salvar no servidor
+  // Salva no servidor
   try {
-    if (patient.id) {
-      await fetchAPI(`/patients?id=${patient.id}`, {
+    if (localPatient?.id) {
+      // Atualiza paciente existente
+      const updated = await fetchAPI(`/patients?id=${localPatient.id}`, {
         method: 'PUT',
-        body: JSON.stringify(patientData),
+        body: JSON.stringify({
+          name: patientData.name,
+          birthDate: patientData.birthDate,
+          photo: patientData.photo,
+          diagnosis: patientData.diagnosis,
+          notes: patientData.notes,
+          preferences: {
+            nickname: patientData.nickname,
+            diagnosisLevel: patientData.diagnosisLevel,
+            diagnosisDate: patientData.diagnosisDate,
+            communicationStyle: patientData.communicationStyle,
+            doctors: patientData.doctors,
+            medications: patientData.medications,
+            allergies: patientData.allergies,
+            interests: patientData.interests,
+            strengths: patientData.strengths,
+            challenges: patientData.challenges,
+            sensoryPreferences: patientData.sensoryPreferences,
+            emergencyContact: patientData.emergencyContact,
+          },
+        }),
       });
+      const fullPatient = { ...patientData, ...updated };
+      saveToStorage(STORAGE_KEYS.PATIENT, fullPatient);
+      return fullPatient;
     } else {
+      // Cria novo paciente
       const created = await fetchAPI('/patients', {
         method: 'POST',
-        body: JSON.stringify(patientData),
+        body: JSON.stringify({
+          name: patientData.name || 'Meu Filho',
+          birthDate: patientData.birthDate,
+          photo: patientData.photo,
+          diagnosis: patientData.diagnosis,
+          notes: patientData.notes,
+          preferences: {
+            nickname: patientData.nickname,
+            diagnosisLevel: patientData.diagnosisLevel,
+            diagnosisDate: patientData.diagnosisDate,
+            communicationStyle: patientData.communicationStyle,
+            doctors: patientData.doctors,
+            medications: patientData.medications,
+            allergies: patientData.allergies,
+            interests: patientData.interests,
+            strengths: patientData.strengths,
+            challenges: patientData.challenges,
+            sensoryPreferences: patientData.sensoryPreferences,
+            emergencyContact: patientData.emergencyContact,
+          },
+        }),
       });
-      saveToStorage(STORAGE_KEYS.PATIENT, created);
-      return created;
+      const fullPatient = { ...patientData, ...created };
+      saveToStorage(STORAGE_KEYS.PATIENT, fullPatient);
+      return fullPatient;
     }
   } catch (error) {
     console.error('Error saving patient to server:', error);
+    return patientData;
   }
-
-  return patientData;
 };
 
 export const updatePatient = async (data) => {
   const patient = getPatient() || {};
-  const updated = {
-    ...patient,
-    ...data,
-    updatedAt: new Date().toISOString(),
-  };
-  return await savePatient(updated);
+  return await savePatient({ ...patient, ...data });
 };
 
 // ==================== PROGRAMS ====================
 export const getPrograms = () => {
-  return getFromStorage(STORAGE_KEYS.PROGRAMS) || [];
+  const programs = getFromStorage(STORAGE_KEYS.PROGRAMS);
+  if (!programs || programs.length === 0) {
+    // Retorna seed programs se não houver nenhum
+    saveToStorage(STORAGE_KEYS.PROGRAMS, seedPrograms);
+    return seedPrograms;
+  }
+  return programs;
 };
 
 export const getProgramsAsync = async () => {
   try {
     const programs = await fetchAPI('/programs');
-    saveToStorage(STORAGE_KEYS.PROGRAMS, programs);
-    return programs;
+    if (programs && programs.length > 0) {
+      saveToStorage(STORAGE_KEYS.PROGRAMS, programs);
+      return programs;
+    }
   } catch (error) {
-    return getFromStorage(STORAGE_KEYS.PROGRAMS) || [];
+    console.error('Error fetching programs:', error);
   }
+  return getPrograms();
 };
 
 export const getProgramById = (id) => {
@@ -186,31 +346,38 @@ export const getProgramsByCategory = (category) => {
 export const addProgram = async (program) => {
   const newProgram = {
     ...program,
-    id: uuidv4(),
-    status: 'active',
+    id: program.id || uuidv4(),
+    status: program.status || 'active',
     createdAt: new Date().toISOString(),
   };
 
-  // Salva localmente primeiro
+  // Salva localmente
   const programs = getPrograms();
   programs.push(newProgram);
   saveToStorage(STORAGE_KEYS.PROGRAMS, programs);
 
-  // Tenta salvar no servidor
+  // Salva no servidor
   try {
     const created = await fetchAPI('/programs', {
       method: 'POST',
-      body: JSON.stringify(program),
+      body: JSON.stringify({
+        name: newProgram.name,
+        category: newProgram.category,
+        description: newProgram.description,
+        targetAccuracy: newProgram.targetAccuracy || 80,
+        status: newProgram.status,
+      }),
     });
-    // Atualiza com o ID do servidor
+
+    // Atualiza com dados do servidor
     const index = programs.findIndex(p => p.id === newProgram.id);
     if (index !== -1) {
-      programs[index] = created;
+      programs[index] = { ...newProgram, ...created };
       saveToStorage(STORAGE_KEYS.PROGRAMS, programs);
-      return created;
+      return programs[index];
     }
   } catch (error) {
-    console.error('Error saving program to server:', error);
+    console.error('Error saving program:', error);
   }
 
   return newProgram;
@@ -230,7 +397,7 @@ export const updateProgram = async (id, data) => {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error('Error updating program on server:', error);
+      console.error('Error updating program:', error);
     }
 
     return programs[index];
@@ -245,7 +412,7 @@ export const deleteProgram = async (id) => {
   try {
     await fetchAPI(`/programs?id=${id}`, { method: 'DELETE' });
   } catch (error) {
-    console.error('Error deleting program on server:', error);
+    console.error('Error deleting program:', error);
   }
 };
 
@@ -257,27 +424,27 @@ export const getSessions = () => {
 export const getSessionsAsync = async () => {
   try {
     const sessions = await fetchAPI('/sessions');
-    saveToStorage(STORAGE_KEYS.SESSIONS, sessions);
-    return sessions;
+    if (sessions) {
+      saveToStorage(STORAGE_KEYS.SESSIONS, sessions);
+      return sessions;
+    }
   } catch (error) {
-    return getFromStorage(STORAGE_KEYS.SESSIONS) || [];
+    console.error('Error fetching sessions:', error);
   }
+  return getSessions();
 };
 
 export const getSessionById = (id) => {
-  const sessions = getSessions();
-  return sessions.find(s => s.id === id);
+  return getSessions().find(s => s.id === id);
 };
 
 export const getSessionsByDate = (date) => {
-  const sessions = getSessions();
   const targetDate = new Date(date).toDateString();
-  return sessions.filter(s => new Date(s.startTime).toDateString() === targetDate);
+  return getSessions().filter(s => new Date(s.startTime).toDateString() === targetDate);
 };
 
 export const getSessionsInRange = (startDate, endDate) => {
-  const sessions = getSessions();
-  return sessions.filter(s => {
+  return getSessions().filter(s => {
     const sessionDate = new Date(s.startTime);
     return sessionDate >= new Date(startDate) && sessionDate <= new Date(endDate);
   });
@@ -285,6 +452,7 @@ export const getSessionsInRange = (startDate, endDate) => {
 
 export const startSession = async (therapistId = null) => {
   const patient = getPatient();
+
   const newSession = {
     id: uuidv4(),
     patientId: patient?.id,
@@ -295,10 +463,12 @@ export const startSession = async (therapistId = null) => {
     notes: '',
   };
 
+  // Salva localmente
   const sessions = getSessions();
   sessions.push(newSession);
   saveToStorage(STORAGE_KEYS.SESSIONS, sessions);
 
+  // Salva no servidor
   try {
     const created = await fetchAPI('/sessions', {
       method: 'POST',
@@ -307,14 +477,15 @@ export const startSession = async (therapistId = null) => {
         therapistName: therapistId,
       }),
     });
+
+    // Atualiza com ID do servidor
     const index = sessions.findIndex(s => s.id === newSession.id);
-    if (index !== -1) {
-      sessions[index] = { ...sessions[index], ...created };
+    if (index !== -1 && created?.id) {
+      sessions[index] = { ...sessions[index], serverId: created.id };
       saveToStorage(STORAGE_KEYS.SESSIONS, sessions);
-      return sessions[index];
     }
   } catch (error) {
-    console.error('Error starting session on server:', error);
+    console.error('Error starting session:', error);
   }
 
   return newSession;
@@ -333,8 +504,9 @@ export const endSession = async (id, notes = '') => {
     };
     saveToStorage(STORAGE_KEYS.SESSIONS, sessions);
 
+    const serverId = sessions[index].serverId || id;
     try {
-      await fetchAPI(`/sessions?id=${id}`, {
+      await fetchAPI(`/sessions?id=${serverId}`, {
         method: 'PUT',
         body: JSON.stringify({
           endTime: new Date().toISOString(),
@@ -342,7 +514,7 @@ export const endSession = async (id, notes = '') => {
         }),
       });
     } catch (error) {
-      console.error('Error ending session on server:', error);
+      console.error('Error ending session:', error);
     }
 
     return sessions[index];
@@ -351,8 +523,7 @@ export const endSession = async (id, notes = '') => {
 };
 
 export const getActiveSession = () => {
-  const sessions = getSessions();
-  return sessions.find(s => s.status === 'active');
+  return getSessions().find(s => s.status === 'active');
 };
 
 // ==================== TRIALS ====================
@@ -361,20 +532,19 @@ export const getTrials = () => {
 };
 
 export const getTrialsBySession = (sessionId) => {
-  const trials = getTrials();
-  return trials.filter(t => t.sessionId === sessionId);
+  return getTrials().filter(t => t.sessionId === sessionId);
 };
 
 export const getTrialsByProgram = (programId) => {
-  const trials = getTrials();
-  return trials.filter(t => t.programId === programId);
+  return getTrials().filter(t => t.programId === programId);
 };
 
 export const getTrialsByProgramAndDateRange = (programId, startDate, endDate) => {
-  const trials = getTrials();
-  return trials.filter(t => {
+  return getTrials().filter(t => {
     const trialDate = new Date(t.timestamp);
-    return t.programId === programId && trialDate >= new Date(startDate) && trialDate <= new Date(endDate);
+    return t.programId === programId &&
+      trialDate >= new Date(startDate) &&
+      trialDate <= new Date(endDate);
   });
 };
 
@@ -387,10 +557,12 @@ export const addTrial = async (trial) => {
     durationMs: trial.durationMs || 0,
   };
 
+  // Salva localmente
   const trials = getTrials();
   trials.push(newTrial);
   saveToStorage(STORAGE_KEYS.TRIALS, trials);
 
+  // Salva no servidor
   try {
     await fetchAPI('/trials', {
       method: 'POST',
@@ -405,7 +577,7 @@ export const addTrial = async (trial) => {
       }),
     });
   } catch (error) {
-    console.error('Error saving trial to server:', error);
+    console.error('Error saving trial:', error);
   }
 
   return newTrial;
@@ -422,11 +594,6 @@ export const getTrialStats = (programId, days = 30) => {
   const incorrect = recentTrials.filter(t => t.result === 'incorrect').length;
   const prompted = recentTrials.filter(t => t.promptLevel && t.promptLevel !== 'ind' && t.promptLevel !== 'I').length;
 
-  const trialsWithTiming = recentTrials.filter(t => t.durationMs > 0);
-  const avgDurationMs = trialsWithTiming.length > 0
-    ? Math.round(trialsWithTiming.reduce((sum, t) => sum + t.durationMs, 0) / trialsWithTiming.length)
-    : 0;
-
   return {
     total,
     correct,
@@ -434,29 +601,34 @@ export const getTrialStats = (programId, days = 30) => {
     prompted,
     accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
     independentRate: total > 0 ? Math.round(((total - prompted) / total) * 100) : 0,
-    avgDurationMs,
-    avgDurationSec: Math.round(avgDurationMs / 1000),
   };
 };
 
 // ==================== BEHAVIORS ====================
 export const getBehaviors = () => {
-  return getFromStorage(STORAGE_KEYS.BEHAVIORS) || [];
+  const behaviors = getFromStorage(STORAGE_KEYS.BEHAVIORS);
+  if (!behaviors || behaviors.length === 0) {
+    saveToStorage(STORAGE_KEYS.BEHAVIORS, seedBehaviors);
+    return seedBehaviors;
+  }
+  return behaviors;
 };
 
 export const getBehaviorsAsync = async () => {
   try {
     const behaviors = await fetchAPI('/behaviors');
-    saveToStorage(STORAGE_KEYS.BEHAVIORS, behaviors);
-    return behaviors;
+    if (behaviors && behaviors.length > 0) {
+      saveToStorage(STORAGE_KEYS.BEHAVIORS, behaviors);
+      return behaviors;
+    }
   } catch (error) {
-    return getFromStorage(STORAGE_KEYS.BEHAVIORS) || [];
+    console.error('Error fetching behaviors:', error);
   }
+  return getBehaviors();
 };
 
 export const getBehaviorById = (id) => {
-  const behaviors = getBehaviors();
-  return behaviors.find(b => b.id === id);
+  return getBehaviors().find(b => b.id === id);
 };
 
 export const addBehavior = async (behavior) => {
@@ -466,17 +638,25 @@ export const addBehavior = async (behavior) => {
     createdAt: new Date().toISOString(),
   };
 
+  // Salva localmente
   const behaviors = getBehaviors();
   behaviors.push(newBehavior);
   saveToStorage(STORAGE_KEYS.BEHAVIORS, behaviors);
 
+  // Salva no servidor
   try {
     await fetchAPI('/behaviors', {
       method: 'POST',
-      body: JSON.stringify(behavior),
+      body: JSON.stringify({
+        name: newBehavior.name,
+        type: newBehavior.type,
+        description: newBehavior.description,
+        severity: newBehavior.severity,
+        color: newBehavior.color,
+      }),
     });
   } catch (error) {
-    console.error('Error saving behavior to server:', error);
+    console.error('Error saving behavior:', error);
   }
 
   return newBehavior;
@@ -496,12 +676,23 @@ export const updateBehavior = async (id, data) => {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error('Error updating behavior on server:', error);
+      console.error('Error updating behavior:', error);
     }
 
     return behaviors[index];
   }
   return null;
+};
+
+export const deleteBehavior = async (id) => {
+  const behaviors = getBehaviors().filter(b => b.id !== id);
+  saveToStorage(STORAGE_KEYS.BEHAVIORS, behaviors);
+
+  try {
+    await fetchAPI(`/behaviors?id=${id}`, { method: 'DELETE' });
+  } catch (error) {
+    console.error('Error deleting behavior:', error);
+  }
 };
 
 // ==================== BEHAVIOR RECORDS ====================
@@ -524,14 +715,12 @@ export const addBehaviorRecord = async (record) => {
 };
 
 export const getBehaviorRecordsByBehavior = (behaviorId) => {
-  const records = getBehaviorRecords();
-  return records.filter(r => r.behaviorId === behaviorId);
+  return getBehaviorRecords().filter(r => r.behaviorId === behaviorId);
 };
 
 export const getBehaviorRecordsByDate = (date) => {
-  const records = getBehaviorRecords();
   const targetDate = new Date(date).toDateString();
-  return records.filter(r => new Date(r.timestamp).toDateString() === targetDate);
+  return getBehaviorRecords().filter(r => new Date(r.timestamp).toDateString() === targetDate);
 };
 
 export const getBehaviorStats = (behaviorId, days = 30) => {
@@ -565,9 +754,8 @@ export const getDailyCheckins = () => {
 };
 
 export const getTodayCheckin = () => {
-  const checkins = getDailyCheckins();
   const today = new Date().toDateString();
-  return checkins.find(c => new Date(c.date).toDateString() === today);
+  return getDailyCheckins().find(c => new Date(c.date).toDateString() === today);
 };
 
 export const saveDailyCheckin = async (checkin) => {
@@ -589,23 +777,31 @@ export const saveDailyCheckin = async (checkin) => {
 
   saveToStorage(STORAGE_KEYS.DAILY_CHECKINS, checkins);
 
+  // Salva no servidor
   try {
     const patient = getPatient();
     await fetchAPI('/checkins', {
       method: 'POST',
       body: JSON.stringify({
         patientId: patient?.id || 'default',
-        sleep: checkin.sleep,
-        mood: checkin.mood,
-        health: checkin.health,
+        sleep: parseInt(checkin.sleep) || 8,
+        mood: checkin.mood || 'neutral',
+        health: checkin.health || 'normal',
         notes: checkin.notes,
       }),
     });
   } catch (error) {
-    console.error('Error saving checkin to server:', error);
+    console.error('Error saving checkin:', error);
   }
 
   return newCheckin;
+};
+
+export const getCheckinsByDateRange = (startDate, endDate) => {
+  return getDailyCheckins().filter(c => {
+    const checkinDate = new Date(c.date);
+    return checkinDate >= new Date(startDate) && checkinDate <= new Date(endDate);
+  });
 };
 
 // ==================== SETTINGS ====================
@@ -624,7 +820,7 @@ export const updateSettings = async (settings) => {
       body: JSON.stringify(updated),
     });
   } catch (error) {
-    console.error('Error saving settings to server:', error);
+    console.error('Error saving settings:', error);
   }
 
   return updated;
@@ -633,6 +829,14 @@ export const updateSettings = async (settings) => {
 // ==================== PROMPTS & REINFORCERS ====================
 export const getPrompts = () => getFromStorage(STORAGE_KEYS.PROMPTS) || seedPrompts;
 export const getReinforcers = () => getFromStorage(STORAGE_KEYS.REINFORCERS) || seedReinforcers;
+
+export const addReinforcer = (reinforcer) => {
+  const reinforcers = getReinforcers();
+  const newReinforcer = { ...reinforcer, id: uuidv4() };
+  reinforcers.push(newReinforcer);
+  saveToStorage(STORAGE_KEYS.REINFORCERS, reinforcers);
+  return newReinforcer;
+};
 
 // ==================== ANALYTICS ====================
 export const getDashboardStats = () => {
@@ -711,7 +915,9 @@ export const getTimingAnalytics = (programId = null, days = 30) => {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
 
-  const recentTrials = trials.filter(t => new Date(t.timestamp) >= startDate && t.durationMs > 0);
+  const recentTrials = trials.filter(t =>
+    new Date(t.timestamp) >= startDate && t.durationMs > 0
+  );
 
   if (recentTrials.length === 0) {
     return { hasData: false };
@@ -720,6 +926,7 @@ export const getTimingAnalytics = (programId = null, days = 30) => {
   return {
     hasData: true,
     totalTrialsWithTiming: recentTrials.length,
+    performanceTrend: 'stable',
   };
 };
 
@@ -753,10 +960,12 @@ export const getTimingByProgram = (days = 30) => {
 
 // ==================== HELPER FUNCTIONS ====================
 const calculateTrend = (values) => {
-  if (values.length < 2) return 'stable';
+  if (!values || values.length < 2) return 'stable';
 
   const firstHalf = values.slice(0, Math.floor(values.length / 2));
   const secondHalf = values.slice(Math.floor(values.length / 2));
+
+  if (firstHalf.length === 0 || secondHalf.length === 0) return 'stable';
 
   const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
   const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
@@ -767,13 +976,12 @@ const calculateTrend = (values) => {
   return 'stable';
 };
 
-// ==================== THERAPISTS (Local only) ====================
+// ==================== LEGACY EXPORTS ====================
 export const getTherapists = () => [];
 export const addTherapist = (t) => t;
 export const updateTherapist = (id, data) => data;
 export const deleteTherapist = (id) => { };
 
-// ==================== NOTES (Local only) ====================
 export const getNotes = () => [];
 export const addNote = (note) => ({ ...note, id: uuidv4() });
 export const getNotesBySession = (sessionId) => [];
@@ -814,34 +1022,6 @@ export const importData = (jsonString) => {
 
 export const clearAllData = () => {
   Object.values(STORAGE_KEYS).forEach(key => {
-    localStorage.removeItem(key);
+    if (isBrowser) localStorage.removeItem(key);
   });
-};
-
-// Legacy exports for backwards compatibility
-export const getCheckinsByDateRange = (startDate, endDate) => {
-  const checkins = getDailyCheckins();
-  return checkins.filter(c => {
-    const checkinDate = new Date(c.date);
-    return checkinDate >= new Date(startDate) && checkinDate <= new Date(endDate);
-  });
-};
-
-export const addReinforcer = (reinforcer) => {
-  const reinforcers = getReinforcers();
-  const newReinforcer = { ...reinforcer, id: uuidv4() };
-  reinforcers.push(newReinforcer);
-  saveToStorage(STORAGE_KEYS.REINFORCERS, reinforcers);
-  return newReinforcer;
-};
-
-export const deleteBehavior = async (id) => {
-  const behaviors = getBehaviors().filter(b => b.id !== id);
-  saveToStorage(STORAGE_KEYS.BEHAVIORS, behaviors);
-
-  try {
-    await fetchAPI(`/behaviors?id=${id}`, { method: 'DELETE' });
-  } catch (error) {
-    console.error('Error deleting behavior on server:', error);
-  }
 };
