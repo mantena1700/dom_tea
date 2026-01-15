@@ -240,10 +240,10 @@ export default function SettingsPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="max-w-5xl"
                 >
-                    <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
-                        <div className="p-5 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/30 dark:bg-neutral-800/20">
-                            <h2 className="text-lg font-bold flex items-center gap-3 text-neutral-800 dark:text-neutral-100">
-                                <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center text-primary-600">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-neutral-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                        <div className="p-5 border-b border-neutral-100 dark:border-slate-700 bg-neutral-50 dark:bg-slate-800/50">
+                            <h2 className="text-lg font-bold flex items-center gap-3 text-slate-800 dark:text-white">
+                                <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400">
                                     <User size={18} />
                                 </div>
                                 Informações do Paciente
@@ -254,7 +254,7 @@ export default function SettingsPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                                 <div className="space-y-6">
                                     <div>
-                                        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5 block">
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
                                             Nome Completo
                                         </label>
                                         <div className="relative">
@@ -263,26 +263,26 @@ export default function SettingsPage() {
                                                 value={patient.name || ''}
                                                 onChange={(e) => setPatient({ ...patient, name: e.target.value })}
                                                 placeholder="Ex: João Silva"
-                                                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all pl-10"
+                                                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all pl-10 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                             />
-                                            <User className="w-4 h-4 text-neutral-400 absolute left-3 top-3" />
+                                            <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5 block">
+                                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
                                                 Data Nascimento
                                             </label>
                                             <input
                                                 type="date"
                                                 value={patient.birthDate || ''}
                                                 onChange={(e) => setPatient({ ...patient, birthDate: e.target.value })}
-                                                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all text-sm"
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5 block">
+                                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
                                                 Idade (Anos)
                                             </label>
                                             <input
@@ -290,7 +290,7 @@ export default function SettingsPage() {
                                                 value={patient.age || ''}
                                                 onChange={(e) => setPatient({ ...patient, age: e.target.value })}
                                                 placeholder="Ex: 5"
-                                                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all text-sm"
                                             />
                                         </div>
                                     </div>
@@ -298,7 +298,7 @@ export default function SettingsPage() {
 
                                 <div className="space-y-6">
                                     <div>
-                                        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5 block">
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
                                             Diagnóstico Clínico
                                         </label>
                                         <div className="relative">
@@ -307,33 +307,33 @@ export default function SettingsPage() {
                                                 value={patient.diagnosis || ''}
                                                 onChange={(e) => setPatient({ ...patient, diagnosis: e.target.value })}
                                                 placeholder="Ex: TEA - Nível 1 de Suporte"
-                                                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all pl-10"
+                                                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all pl-10 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                             />
-                                            <Activity className="w-4 h-4 text-neutral-400 absolute left-3 top-3" />
+                                            <Activity className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                                         </div>
                                     </div>
 
                                     <div>
-                                        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5 block">
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
                                             Observações
                                         </label>
                                         <textarea
                                             value={patient.notes || ''}
                                             onChange={(e) => setPatient({ ...patient, notes: e.target.value })}
                                             placeholder="Informações médicas relevantes, alergias, etc."
-                                            className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none min-h-[120px]"
+                                            className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all resize-none min-h-[105px] text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                         />
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="p-6 md:p-8 bg-neutral-50/50 dark:bg-neutral-800/30 border-t border-neutral-100 dark:border-neutral-800 flex justify-end">
+                        <div className="p-4 bg-neutral-50 dark:bg-slate-800/40 border-t border-neutral-100 dark:border-slate-700 flex justify-end">
                             <button
                                 onClick={handleSavePatient}
-                                className="btn-primary px-8 py-3 shadow-lg shadow-primary-500/20 hover:shadow-primary-500/30 transition-all font-semibold text-base"
+                                className="btn-primary px-6 py-2.5 shadow-sm text-sm font-medium flex items-center gap-2"
                             >
-                                <Save size={20} />
+                                <Save size={18} />
                                 Salvar Alterações
                             </button>
                         </div>
