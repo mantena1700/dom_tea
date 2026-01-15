@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
 import {
     User,
     Camera,
@@ -13,1101 +12,489 @@ import {
     Save,
     Plus,
     X,
-    Cake,
-    Clock,
-    Activity,
-    Award,
-    Target,
-    TrendingUp,
-    Sparkles,
-    ChevronRight,
-    Image as ImageIcon,
-    Trash2,
-    Phone,
-    Mail,
-    MapPin,
-    FileText,
     Stethoscope,
-    Brain,
-    Puzzle,
-    Music,
-    Palette,
-    Gamepad2,
-    UtensilsCrossed,
-    Baby,
+    Pill,
+    AlertCircle,
+    Activity,
+    FileText,
+    Settings,
+    ChevronRight,
+    Check
 } from 'lucide-react';
+import {
+    Card,
+    Badge,
+    Button,
+    Input,
+    Textarea,
+    PageHeader,
+    TabNav,
+    SectionTitle,
+    Divider,
+    EmptyState
+} from '@/components/ui';
 import {
     getPatient,
     savePatient,
-    getDashboardStats,
-    getPrograms,
-    getSessions,
 } from '@/lib/dataService';
-import { format, differenceInYears, differenceInMonths } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import DevelopmentalAssessment from './DevelopmentalAssessment';
 
-const interestIcons = {
-    music: Music,
-    art: Palette,
-    games: Gamepad2,
-    food: UtensilsCrossed,
-    puzzles: Puzzle,
-    other: Star,
-};
+const TABS = [
+    { id: 'profile', label: 'Perfil', icon: User },
+    { id: 'health', label: 'Saúde', icon: Heart },
+    { id: 'preferences', label: 'Preferências', icon: Star },
+    { id: 'notes', label: 'Observações', icon: FileText },
+];
 
 export default function PatientProfile() {
-    const [mounted, setMounted] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [activeTab, setActiveTab] = useState('profile');
+    const [notes, setNotes] = useState([]);
+    const [newNote, setNewNote] = useState('');
+    const fileInputRef = useRef(null);
+
     const [patient, setPatient] = useState({
         name: '',
-        nickname: '',
         birthDate: '',
         photo: null,
         diagnosis: '',
-        diagnosisDate: '',
-        diagnosisLevel: '',
-        doctors: [],
-        medications: [],
+        communicationStyle: '',
         allergies: [],
+        medications: [],
+        doctors: [],
         interests: [],
         strengths: [],
         challenges: [],
-        sensoryPreferences: {
-            likes: [],
-            dislikes: [],
-        },
-        communicationStyle: '',
-        emergencyContact: {
-            name: '',
-            phone: '',
-            relationship: '',
-        },
-        notes: '',
+        notes: ''
     });
-    const [isEditing, setIsEditing] = useState(false);
-    const [stats, setStats] = useState(null);
-    const [activeTab, setActiveTab] = useState('profile');
-    const [showPhotoModal, setShowPhotoModal] = useState(false);
-    const [showDevelopmentAssessment, setShowDevelopmentAssessment] = useState(false);
-    const fileInputRef = useRef(null);
-    const [saved, setSaved] = useState(false);
 
-    // New item inputs
-    const [newInterest, setNewInterest] = useState('');
-    const [newStrength, setNewStrength] = useState('');
-    const [newChallenge, setNewChallenge] = useState('');
-    const [newMedication, setNewMedication] = useState('');
-    const [newAllergy, setNewAllergy] = useState('');
-    const [newDoctor, setNewDoctor] = useState({ name: '', specialty: '', phone: '' });
+    // Inputs temporários para listas
+    const [tempInputs, setTempInputs] = useState({
+        allergy: '',
+        medication: '',
+        interest: '',
+        strength: '',
+        challenge: '',
+    });
 
     useEffect(() => {
-        setMounted(true);
         loadData();
     }, []);
 
-    const loadData = () => {
-        const patientData = getPatient();
-        if (patientData) {
-            setPatient({ ...patient, ...patientData });
+    const loadData = async () => {
+        try {
+            const patientData = await getPatient();
+            if (patientData) setPatient(prev => ({ ...prev, ...patientData }));
+        } catch (error) {
+            console.error('Erro ao carregar dados:', error);
+        } finally {
+            setLoading(false);
         }
-        setStats(getDashboardStats());
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await savePatient(patient);
+        } catch (error) {
+            console.error('Erro ao salvar:', error);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handlePhotoUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                // Redimensionar imagem
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const size = 200;
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    const scale = Math.max(size / img.width, size / img.height);
+                    const x = (size - img.width * scale) / 2;
+                    const y = (size - img.height * scale) / 2;
+                    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                    const resized = canvas.toDataURL('image/jpeg', 0.8);
+                    setPatient({ ...patient, photo: resized });
+                };
+                img.src = event.target?.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const addToList = (key, value, inputKey) => {
+        if (value.trim()) {
+            setPatient({
+                ...patient,
+                [key]: [...(patient[key] || []), value.trim()]
+            });
+            setTempInputs({ ...tempInputs, [inputKey]: '' });
+        }
+    };
+
+    const removeFromList = (key, index) => {
+        setPatient({
+            ...patient,
+            [key]: patient[key].filter((_, i) => i !== index)
+        });
+    };
+
+    const handleAddNote = () => {
+        if (newNote.trim()) {
+            setNotes([{ content: newNote, timestamp: new Date().toISOString() }, ...notes]);
+            setNewNote('');
+        }
     };
 
     const calculateAge = (birthDate) => {
         if (!birthDate) return null;
         const birth = new Date(birthDate);
-        const years = differenceInYears(new Date(), birth);
-        const months = differenceInMonths(new Date(), birth) % 12;
-
-        if (years === 0) {
-            return `${months} ${months === 1 ? 'mês' : 'meses'}`;
-        }
-        return `${years} ${years === 1 ? 'ano' : 'anos'}${months > 0 ? ` e ${months} ${months === 1 ? 'mês' : 'meses'}` : ''}`;
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+        return age;
     };
 
-    const handlePhotoUpload = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        if (!file.type.startsWith('image/')) {
-            alert('Por favor, selecione uma imagem válida.');
-            return;
-        }
-
-        // Compressão e redimensionamento
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.src = e.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-
-                // Max dimensions
-                const MAX_WIDTH = 800;
-                const MAX_HEIGHT = 800;
-                let width = img.width;
-                let height = img.height;
-
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_HEIGHT) {
-                        width *= MAX_HEIGHT / height;
-                        height = MAX_HEIGHT;
-                    }
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                ctx.drawImage(img, 0, 0, width, height);
-
-                // Compress to JPEG 0.7
-                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                setPatient({ ...patient, photo: compressedBase64 });
-                setShowPhotoModal(false);
-            };
-        };
-        reader.readAsDataURL(file);
-    };
-
-    const handleRemovePhoto = () => {
-        setPatient({ ...patient, photo: null });
-        setShowPhotoModal(false);
-    };
-
-    const handleSave = () => {
-        // Calculate age from birthDate
-        let age = patient.age;
-        if (patient.birthDate) {
-            const birth = new Date(patient.birthDate);
-            age = differenceInYears(new Date(), birth);
-        }
-
-        savePatient({ ...patient, age });
-        setIsEditing(false);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
-    };
-
-    const addListItem = (list, item, setItem, key) => {
-        if (!item.trim()) return;
-        setPatient({
-            ...patient,
-            [key]: [...(patient[key] || []), item.trim()],
-        });
-        setItem('');
-    };
-
-    const removeListItem = (key, index) => {
-        setPatient({
-            ...patient,
-            [key]: patient[key].filter((_, i) => i !== index),
-        });
-    };
-
-    const addDoctor = () => {
-        if (!newDoctor.name.trim()) return;
-        setPatient({
-            ...patient,
-            doctors: [...(patient.doctors || []), { ...newDoctor }],
-        });
-        setNewDoctor({ name: '', specialty: '', phone: '' });
-    };
-
-    const removeDoctor = (index) => {
-        setPatient({
-            ...patient,
-            doctors: patient.doctors.filter((_, i) => i !== index),
-        });
-    };
-
-    if (!mounted) {
-        return <div className="animate-pulse p-8">Carregando...</div>;
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[50vh]">
+                <div className="w-10 h-10 border-4 border-[var(--primary-500)]/30 border-t-[var(--primary-500)] rounded-full animate-spin" />
+            </div>
+        );
     }
 
-    const tabs = [
-        { id: 'profile', label: 'Perfil', icon: User },
-        { id: 'health', label: 'Saúde', icon: Heart },
-        { id: 'preferences', label: 'Preferências', icon: Star },
-        { id: 'team', label: 'Equipe', icon: Stethoscope },
-    ];
-
     return (
-        <div className="animate-fade-in">
-            {/* Saved Feedback */}
-            <AnimatePresence>
-                {saved && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed top-4 right-4 bg-success-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg z-50"
+        <div className="max-w-4xl mx-auto px-4 py-6">
+
+            {/* Header com Foto */}
+            <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
+                {/* Foto */}
+                <div className="relative">
+                    <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-28 h-28 rounded-full bg-[var(--bg-tertiary)] border-4 border-[var(--bg-card)] shadow-xl overflow-hidden cursor-pointer group"
                     >
-                        <Save size={18} />
-                        Salvo com sucesso!
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Developmental Assessment Modal */}
-            <AnimatePresence>
-                {showDevelopmentAssessment && (
-                    <DevelopmentalAssessment
-                        onClose={() => setShowDevelopmentAssessment(false)}
-                        onComplete={(programs) => {
-                            setShowDevelopmentAssessment(false);
-                            loadData();
-                        }}
-                    />
-                )}
-            </AnimatePresence>
-
-            {/* Header with Photo */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="relative overflow-hidden rounded-2xl mb-8"
-                style={{
-                    background: 'linear-gradient(135deg, #1E88E5 0%, #1565C0 50%, #0D47A1 100%)',
-                    padding: '2rem',
-                }}
-            >
-                <div className="relative flex flex-col md:flex-row items-center gap-6">
-                    {/* Photo */}
-                    <motion.div
-                        whileHover={{ scale: 1.02 }}
-                        className="relative flex-shrink-0"
-                    >
-                        <div
-                            className="w-32 h-32 md:w-36 md:h-36 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden border-4 border-white/40 shadow-xl cursor-pointer"
-                            onClick={() => setShowPhotoModal(true)}
-                        >
-                            {patient.photo ? (
-                                <img
-                                    src={patient.photo}
-                                    alt={patient.name || 'Foto do paciente'}
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <div className="text-center text-white/80">
-                                    <Camera className="w-10 h-10 mx-auto mb-1" />
-                                    <span className="text-xs">Adicionar foto</span>
-                                </div>
-                            )}
-                        </div>
-                        <button
-                            onClick={() => setShowPhotoModal(true)}
-                            className="absolute bottom-1 right-1 w-9 h-9 rounded-full bg-white shadow-lg flex items-center justify-center text-primary-600 hover:bg-primary-50 transition-colors"
-                        >
-                            <Camera size={18} />
-                        </button>
-                    </motion.div>
-
-                    {/* Info */}
-                    <div className="flex-1 text-center md:text-left text-white">
-                        {isEditing ? (
-                            <div className="space-y-3 max-w-md">
-                                <input
-                                    type="text"
-                                    value={patient.name || ''}
-                                    onChange={(e) => setPatient({ ...patient, name: e.target.value })}
-                                    placeholder="Nome completo"
-                                    className="w-full px-4 py-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/60 text-xl font-bold"
-                                />
-                                <input
-                                    type="text"
-                                    value={patient.nickname || ''}
-                                    onChange={(e) => setPatient({ ...patient, nickname: e.target.value })}
-                                    placeholder="Apelido carinhoso"
-                                    className="w-full px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/60"
-                                />
-                                <input
-                                    type="date"
-                                    value={patient.birthDate || ''}
-                                    onChange={(e) => setPatient({ ...patient, birthDate: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white"
-                                />
+                        {patient.photo ? (
+                            <img src={patient.photo} alt="Foto" className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[var(--text-muted)]">
+                                <User size={40} />
                             </div>
-                        ) : (
-                            <>
-                                <h1 className="text-3xl md:text-4xl font-bold mb-1" style={{ color: 'white' }}>
-                                    {patient.name || 'Cadastre seu filho'}
-                                </h1>
-                                {patient.nickname && (
-                                    <p className="text-lg text-white/80 mb-3">"{patient.nickname}"</p>
-                                )}
-                                {patient.birthDate && (
-                                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-3">
-                                        <span className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full text-sm">
-                                            <Cake size={16} />
-                                            {calculateAge(patient.birthDate)}
-                                        </span>
-                                        <span className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full text-sm">
-                                            <Calendar size={16} />
-                                            {format(new Date(patient.birthDate), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                                        </span>
-                                    </div>
-                                )}
-                            </>
                         )}
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Camera size={24} className="text-white" />
+                        </div>
                     </div>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handlePhotoUpload}
+                    />
+                </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-2 flex-shrink-0">
-                        {isEditing ? (
-                            <>
-                                <button
-                                    onClick={() => {
-                                        setIsEditing(false);
-                                        loadData();
-                                    }}
-                                    className="px-5 py-2.5 rounded-xl bg-white/20 text-white hover:bg-white/30 transition-colors text-sm"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={handleSave}
-                                    className="px-5 py-2.5 rounded-xl bg-white text-primary-600 font-semibold hover:bg-white/90 transition-colors flex items-center gap-2 text-sm"
-                                >
-                                    <Save size={16} />
-                                    Salvar
-                                </button>
-                            </>
-                        ) : (
-                            <button
-                                onClick={() => setIsEditing(true)}
-                                className="px-5 py-2.5 rounded-xl bg-white/20 text-white hover:bg-white/30 transition-colors flex items-center gap-2 text-sm"
-                            >
-                                <Edit2 size={16} />
-                                Editar
-                            </button>
+                {/* Info */}
+                <div className="text-center sm:text-left flex-1">
+                    <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+                        {patient.name || 'Nome do Paciente'}
+                    </h1>
+                    <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
+                        {patient.birthDate && (
+                            <Badge variant="neutral">
+                                <Calendar size={14} />
+                                {calculateAge(patient.birthDate)} anos
+                            </Badge>
+                        )}
+                        {patient.diagnosis && (
+                            <Badge variant="primary">
+                                <Activity size={14} />
+                                {patient.diagnosis}
+                            </Badge>
                         )}
                     </div>
                 </div>
 
-                {/* Quick Stats */}
-                {stats && (
-                    <div className="relative grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
-                        <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 text-center">
-                            <p className="text-2xl font-bold text-white">{stats.totalSessions}</p>
-                            <p className="text-white/70 text-xs">Sessões Realizadas</p>
-                        </div>
-                        <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 text-center">
-                            <p className="text-2xl font-bold text-white">{stats.totalTrials}</p>
-                            <p className="text-white/70 text-xs">Tentativas Totais</p>
-                        </div>
-                        <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 text-center">
-                            <p className="text-2xl font-bold text-white">{stats.weekAccuracy}%</p>
-                            <p className="text-white/70 text-xs">Acurácia Semanal</p>
-                        </div>
-                        <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 text-center">
-                            <p className="text-2xl font-bold text-white">{getPrograms().filter(p => p.status === 'active').length}</p>
-                            <p className="text-white/70 text-xs">Programas Ativos</p>
-                        </div>
-                    </div>
-                )}
-            </motion.div>
+                {/* Salvar */}
+                <Button onClick={handleSave} loading={saving}>
+                    <Check size={18} />
+                    Salvar
+                </Button>
+            </div>
 
             {/* Tabs */}
-            <div className="tabs mb-6">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`tab flex items-center gap-2 ${activeTab === tab.id ? 'active' : ''}`}
-                    >
-                        <tab.icon size={18} />
-                        {tab.label}
-                    </button>
-                ))}
-            </div>
+            <TabNav
+                tabs={TABS}
+                activeTab={activeTab}
+                onChange={setActiveTab}
+            />
 
-            {/* Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Content */}
-                <div className="lg:col-span-2 space-y-6">
+            {/* Conteúdo das Tabs */}
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                >
+                    {/* PERFIL */}
                     {activeTab === 'profile' && (
-                        <>
-                            {/* Developmental Assessment CTA */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="chart-container bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-l-4 border-purple-500"
-                            >
-                                <div className="flex flex-col md:flex-row items-center gap-4">
-                                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-                                        <Baby className="w-7 h-7 text-white" />
-                                    </div>
-                                    <div className="flex-1 text-center md:text-left">
-                                        <h3 className="font-bold text-purple-800 dark:text-purple-200">
-                                            Avaliação de Marco do Desenvolvimento
-                                        </h3>
-                                        <p className="text-sm text-purple-600 dark:text-purple-300">
-                                            Identifique o nível de desenvolvimento e receba os programas ideais automaticamente.
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={() => setShowDevelopmentAssessment(true)}
-                                        className="btn-primary whitespace-nowrap bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700"
-                                    >
-                                        <Sparkles size={18} />
-                                        Iniciar Avaliação
-                                    </button>
-                                </div>
-                            </motion.div>
+                        <Card>
+                            <div className="space-y-4">
+                                <Input
+                                    label="Nome Completo"
+                                    icon={User}
+                                    value={patient.name || ''}
+                                    onChange={(e) => setPatient({ ...patient, name: e.target.value })}
+                                    placeholder="Nome do paciente"
+                                />
 
-                            {/* Diagnosis Info */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="chart-container"
-                            >
-                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                    <Brain className="w-5 h-5 text-purple-500" />
-                                    Diagnóstico
-                                </h2>
-
-                                {isEditing ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="input-label">Diagnóstico</label>
-                                            <input
-                                                type="text"
-                                                value={patient.diagnosis || ''}
-                                                onChange={(e) => setPatient({ ...patient, diagnosis: e.target.value })}
-                                                placeholder="Ex: Transtorno do Espectro Autista"
-                                                className="input-field"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="input-label">Nível (se aplicável)</label>
-                                            <select
-                                                value={patient.diagnosisLevel || ''}
-                                                onChange={(e) => setPatient({ ...patient, diagnosisLevel: e.target.value })}
-                                                className="input-field"
-                                            >
-                                                <option value="">Selecione...</option>
-                                                <option value="1">Nível 1 - Requer Suporte</option>
-                                                <option value="2">Nível 2 - Requer Suporte Substancial</option>
-                                                <option value="3">Nível 3 - Requer Suporte Muito Substancial</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="input-label">Data do Diagnóstico</label>
-                                            <input
-                                                type="date"
-                                                value={patient.diagnosisDate || ''}
-                                                onChange={(e) => setPatient({ ...patient, diagnosisDate: e.target.value })}
-                                                className="input-field"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="input-label">Estilo de Comunicação</label>
-                                            <select
-                                                value={patient.communicationStyle || ''}
-                                                onChange={(e) => setPatient({ ...patient, communicationStyle: e.target.value })}
-                                                className="input-field"
-                                            >
-                                                <option value="">Selecione...</option>
-                                                <option value="verbal">Verbal</option>
-                                                <option value="partially_verbal">Parcialmente Verbal</option>
-                                                <option value="non_verbal">Não Verbal</option>
-                                                <option value="aac">Usa CAA (Comunicação Alternativa)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20">
-                                            <p className="text-sm text-neutral-500 mb-1">Diagnóstico</p>
-                                            <p className="font-semibold">{patient.diagnosis || 'Não informado'}</p>
-                                        </div>
-                                        {patient.diagnosisLevel && (
-                                            <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20">
-                                                <p className="text-sm text-neutral-500 mb-1">Nível</p>
-                                                <p className="font-semibold">Nível {patient.diagnosisLevel}</p>
-                                            </div>
-                                        )}
-                                        {patient.diagnosisDate && (
-                                            <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">
-                                                <p className="text-sm text-neutral-500 mb-1">Data do Diagnóstico</p>
-                                                <p className="font-semibold">{format(new Date(patient.diagnosisDate), "dd/MM/yyyy")}</p>
-                                            </div>
-                                        )}
-                                        <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">
-                                            <p className="text-sm text-neutral-500 mb-1">Comunicação</p>
-                                            <p className="font-semibold">
-                                                {patient.communicationStyle === 'verbal' ? 'Verbal' :
-                                                    patient.communicationStyle === 'partially_verbal' ? 'Parcialmente Verbal' :
-                                                        patient.communicationStyle === 'non_verbal' ? 'Não Verbal' :
-                                                            patient.communicationStyle === 'aac' ? 'Usa CAA' : 'Não informado'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </motion.div>
-
-                            {/* Notes */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 }}
-                                className="chart-container"
-                            >
-                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                    <FileText className="w-5 h-5 text-primary-500" />
-                                    Observações Gerais
-                                </h2>
-
-                                {isEditing ? (
-                                    <textarea
-                                        value={patient.notes || ''}
-                                        onChange={(e) => setPatient({ ...patient, notes: e.target.value })}
-                                        placeholder="Informações importantes sobre o paciente..."
-                                        className="input-field resize-none"
-                                        rows={4}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <Input
+                                        label="Data de Nascimento"
+                                        icon={Calendar}
+                                        type="date"
+                                        value={patient.birthDate || ''}
+                                        onChange={(e) => setPatient({ ...patient, birthDate: e.target.value })}
                                     />
-                                ) : (
-                                    <p className="text-neutral-600 dark:text-neutral-400">
-                                        {patient.notes || 'Nenhuma observação registrada.'}
-                                    </p>
-                                )}
-                            </motion.div>
-                        </>
+                                    <Input
+                                        label="Diagnóstico"
+                                        icon={Activity}
+                                        value={patient.diagnosis || ''}
+                                        onChange={(e) => setPatient({ ...patient, diagnosis: e.target.value })}
+                                        placeholder="Ex: TEA Nível 1"
+                                    />
+                                </div>
+
+                                <Input
+                                    label="Estilo de Comunicação"
+                                    value={patient.communicationStyle || ''}
+                                    onChange={(e) => setPatient({ ...patient, communicationStyle: e.target.value })}
+                                    placeholder="Ex: Verbal, PECS, Gestos..."
+                                />
+                            </div>
+                        </Card>
                     )}
 
+                    {/* SAÚDE */}
                     {activeTab === 'health' && (
-                        <>
-                            {/* Medications */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="chart-container"
-                            >
-                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                    <Heart className="w-5 h-5 text-error-500" />
-                                    Medicamentos
-                                </h2>
-
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                    {(patient.medications || []).map((med, index) => (
-                                        <span
-                                            key={index}
-                                            className="badge badge-error flex items-center gap-2"
-                                        >
-                                            {med}
-                                            {isEditing && (
-                                                <button onClick={() => removeListItem('medications', index)}>
-                                                    <X size={14} />
-                                                </button>
-                                            )}
-                                        </span>
-                                    ))}
-                                    {(patient.medications || []).length === 0 && !isEditing && (
-                                        <p className="text-neutral-500">Nenhum medicamento registrado.</p>
-                                    )}
-                                </div>
-
-                                {isEditing && (
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={newMedication}
-                                            onChange={(e) => setNewMedication(e.target.value)}
-                                            placeholder="Adicionar medicamento..."
-                                            className="input-field flex-1"
-                                            onKeyPress={(e) => e.key === 'Enter' && addListItem('medications', newMedication, setNewMedication, 'medications')}
-                                        />
-                                        <button
-                                            onClick={() => addListItem('medications', newMedication, setNewMedication, 'medications')}
-                                            className="btn-primary"
-                                        >
-                                            <Plus size={18} />
-                                        </button>
-                                    </div>
-                                )}
-                            </motion.div>
-
-                            {/* Allergies */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 }}
-                                className="chart-container"
-                            >
-                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                    <Activity className="w-5 h-5 text-warning-500" />
-                                    Alergias e Restrições
-                                </h2>
-
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                    {(patient.allergies || []).map((allergy, index) => (
-                                        <span
-                                            key={index}
-                                            className="badge badge-warning flex items-center gap-2"
-                                        >
-                                            {allergy}
-                                            {isEditing && (
-                                                <button onClick={() => removeListItem('allergies', index)}>
-                                                    <X size={14} />
-                                                </button>
-                                            )}
-                                        </span>
-                                    ))}
-                                    {(patient.allergies || []).length === 0 && !isEditing && (
-                                        <p className="text-neutral-500">Nenhuma alergia registrada.</p>
-                                    )}
-                                </div>
-
-                                {isEditing && (
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={newAllergy}
-                                            onChange={(e) => setNewAllergy(e.target.value)}
-                                            placeholder="Adicionar alergia..."
-                                            className="input-field flex-1"
-                                            onKeyPress={(e) => e.key === 'Enter' && addListItem('allergies', newAllergy, setNewAllergy, 'allergies')}
-                                        />
-                                        <button
-                                            onClick={() => addListItem('allergies', newAllergy, setNewAllergy, 'allergies')}
-                                            className="btn-primary"
-                                        >
-                                            <Plus size={18} />
-                                        </button>
-                                    </div>
-                                )}
-                            </motion.div>
-
-                            {/* Emergency Contact */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 }}
-                                className="chart-container"
-                            >
-                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                    <Phone className="w-5 h-5 text-success-500" />
-                                    Contato de Emergência
-                                </h2>
-
-                                {isEditing ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <input
-                                            type="text"
-                                            value={patient.emergencyContact?.name || ''}
-                                            onChange={(e) => setPatient({
-                                                ...patient,
-                                                emergencyContact: { ...patient.emergencyContact, name: e.target.value }
-                                            })}
-                                            placeholder="Nome"
-                                            className="input-field"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={patient.emergencyContact?.phone || ''}
-                                            onChange={(e) => setPatient({
-                                                ...patient,
-                                                emergencyContact: { ...patient.emergencyContact, phone: e.target.value }
-                                            })}
-                                            placeholder="Telefone"
-                                            className="input-field"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={patient.emergencyContact?.relationship || ''}
-                                            onChange={(e) => setPatient({
-                                                ...patient,
-                                                emergencyContact: { ...patient.emergencyContact, relationship: e.target.value }
-                                            })}
-                                            placeholder="Parentesco"
-                                            className="input-field"
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-4">
-                                        {patient.emergencyContact?.name ? (
-                                            <>
-                                                <div className="avatar">
-                                                    {patient.emergencyContact.name.charAt(0)}
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold">{patient.emergencyContact.name}</p>
-                                                    <p className="text-sm text-neutral-500">
-                                                        {patient.emergencyContact.relationship} • {patient.emergencyContact.phone}
-                                                    </p>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <p className="text-neutral-500">Nenhum contato de emergência registrado.</p>
-                                        )}
-                                    </div>
-                                )}
-                            </motion.div>
-                        </>
-                    )}
-
-                    {activeTab === 'preferences' && (
-                        <>
-                            {/* Interests */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="chart-container"
-                            >
-                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                    <Star className="w-5 h-5 text-warning-500" />
-                                    Interesses e Hiperfoco
-                                </h2>
-
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                    {(patient.interests || []).map((interest, index) => (
-                                        <span
-                                            key={index}
-                                            className="badge badge-warning flex items-center gap-2"
-                                        >
-                                            ⭐ {interest}
-                                            {isEditing && (
-                                                <button onClick={() => removeListItem('interests', index)}>
-                                                    <X size={14} />
-                                                </button>
-                                            )}
-                                        </span>
-                                    ))}
-                                    {(patient.interests || []).length === 0 && !isEditing && (
-                                        <p className="text-neutral-500">Nenhum interesse registrado.</p>
-                                    )}
-                                </div>
-
-                                {isEditing && (
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={newInterest}
-                                            onChange={(e) => setNewInterest(e.target.value)}
-                                            placeholder="Adicionar interesse..."
-                                            className="input-field flex-1"
-                                            onKeyPress={(e) => e.key === 'Enter' && addListItem('interests', newInterest, setNewInterest, 'interests')}
-                                        />
-                                        <button
-                                            onClick={() => addListItem('interests', newInterest, setNewInterest, 'interests')}
-                                            className="btn-primary"
-                                        >
-                                            <Plus size={18} />
-                                        </button>
-                                    </div>
-                                )}
-                            </motion.div>
-
-                            {/* Strengths */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 }}
-                                className="chart-container"
-                            >
-                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                    <Award className="w-5 h-5 text-success-500" />
-                                    Pontos Fortes
-                                </h2>
-
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                    {(patient.strengths || []).map((strength, index) => (
-                                        <span
-                                            key={index}
-                                            className="badge badge-success flex items-center gap-2"
-                                        >
-                                            💪 {strength}
-                                            {isEditing && (
-                                                <button onClick={() => removeListItem('strengths', index)}>
-                                                    <X size={14} />
-                                                </button>
-                                            )}
-                                        </span>
-                                    ))}
-                                    {(patient.strengths || []).length === 0 && !isEditing && (
-                                        <p className="text-neutral-500">Nenhum ponto forte registrado.</p>
-                                    )}
-                                </div>
-
-                                {isEditing && (
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={newStrength}
-                                            onChange={(e) => setNewStrength(e.target.value)}
-                                            placeholder="Adicionar ponto forte..."
-                                            className="input-field flex-1"
-                                            onKeyPress={(e) => e.key === 'Enter' && addListItem('strengths', newStrength, setNewStrength, 'strengths')}
-                                        />
-                                        <button
-                                            onClick={() => addListItem('strengths', newStrength, setNewStrength, 'strengths')}
-                                            className="btn-primary"
-                                        >
-                                            <Plus size={18} />
-                                        </button>
-                                    </div>
-                                )}
-                            </motion.div>
-
-                            {/* Challenges */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 }}
-                                className="chart-container"
-                            >
-                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                    <Target className="w-5 h-5 text-primary-500" />
-                                    Desafios e Áreas de Desenvolvimento
-                                </h2>
-
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                    {(patient.challenges || []).map((challenge, index) => (
-                                        <span
-                                            key={index}
-                                            className="badge badge-primary flex items-center gap-2"
-                                        >
-                                            🎯 {challenge}
-                                            {isEditing && (
-                                                <button onClick={() => removeListItem('challenges', index)}>
-                                                    <X size={14} />
-                                                </button>
-                                            )}
-                                        </span>
-                                    ))}
-                                    {(patient.challenges || []).length === 0 && !isEditing && (
-                                        <p className="text-neutral-500">Nenhum desafio registrado.</p>
-                                    )}
-                                </div>
-
-                                {isEditing && (
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={newChallenge}
-                                            onChange={(e) => setNewChallenge(e.target.value)}
-                                            placeholder="Adicionar desafio..."
-                                            className="input-field flex-1"
-                                            onKeyPress={(e) => e.key === 'Enter' && addListItem('challenges', newChallenge, setNewChallenge, 'challenges')}
-                                        />
-                                        <button
-                                            onClick={() => addListItem('challenges', newChallenge, setNewChallenge, 'challenges')}
-                                            className="btn-primary"
-                                        >
-                                            <Plus size={18} />
-                                        </button>
-                                    </div>
-                                )}
-                            </motion.div>
-                        </>
-                    )}
-
-                    {activeTab === 'team' && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="chart-container"
-                        >
-                            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                <Stethoscope className="w-5 h-5 text-primary-500" />
-                                Profissionais de Saúde
-                            </h2>
-
-                            <div className="space-y-4 mb-4">
-                                {(patient.doctors || []).map((doctor, index) => (
-                                    <div
-                                        key={index}
-                                        className="flex items-center justify-between p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50"
+                        <div className="space-y-4">
+                            {/* Alergias */}
+                            <Card>
+                                <SectionTitle>Alergias</SectionTitle>
+                                <div className="flex gap-2 mb-3">
+                                    <Input
+                                        placeholder="Adicionar alergia..."
+                                        value={tempInputs.allergy}
+                                        onChange={(e) => setTempInputs({ ...tempInputs, allergy: e.target.value })}
+                                        className="flex-1"
+                                    />
+                                    <Button
+                                        onClick={() => addToList('allergies', tempInputs.allergy, 'allergy')}
+                                        size="sm"
                                     >
-                                        <div className="flex items-center gap-4">
-                                            <div className="avatar">
-                                                {doctor.name.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <p className="font-semibold">{doctor.name}</p>
-                                                <p className="text-sm text-neutral-500">{doctor.specialty}</p>
-                                                {doctor.phone && (
-                                                    <p className="text-sm text-neutral-400 flex items-center gap-1">
-                                                        <Phone size={12} /> {doctor.phone}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                        {isEditing && (
-                                            <button
-                                                onClick={() => removeDoctor(index)}
-                                                className="btn-icon text-error-500"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        )}
-                                    </div>
-                                ))}
-                                {(patient.doctors || []).length === 0 && !isEditing && (
-                                    <p className="text-neutral-500 text-center py-8">
-                                        Nenhum profissional cadastrado.
-                                    </p>
-                                )}
-                            </div>
-
-                            {isEditing && (
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-                                    <input
-                                        type="text"
-                                        value={newDoctor.name}
-                                        onChange={(e) => setNewDoctor({ ...newDoctor, name: e.target.value })}
-                                        placeholder="Nome"
-                                        className="input-field"
-                                    />
-                                    <input
-                                        type="text"
-                                        value={newDoctor.specialty}
-                                        onChange={(e) => setNewDoctor({ ...newDoctor, specialty: e.target.value })}
-                                        placeholder="Especialidade"
-                                        className="input-field"
-                                    />
-                                    <input
-                                        type="text"
-                                        value={newDoctor.phone}
-                                        onChange={(e) => setNewDoctor({ ...newDoctor, phone: e.target.value })}
-                                        placeholder="Telefone"
-                                        className="input-field"
-                                    />
-                                    <button onClick={addDoctor} className="btn-primary">
                                         <Plus size={18} />
-                                        Adicionar
-                                    </button>
+                                    </Button>
                                 </div>
-                            )}
-                        </motion.div>
-                    )}
-                </div>
-
-                {/* Sidebar */}
-                <div className="space-y-6">
-                    {/* Quick Actions */}
-                    <div className="chart-container">
-                        <h3 className="font-semibold mb-4">Ações Rápidas</h3>
-                        <div className="space-y-2">
-                            <Link href="/session" className="btn-primary w-full justify-start">
-                                <Activity size={18} />
-                                Nova Sessão
-                            </Link>
-                            <Link href="/reports" className="btn-secondary w-full justify-start">
-                                <TrendingUp size={18} />
-                                Ver Relatórios
-                            </Link>
-                            <Link href="/insights" className="btn-secondary w-full justify-start">
-                                <Sparkles size={18} />
-                                Insights IA
-                            </Link>
-                        </div>
-                    </div>
-
-                    {/* Recent Activity */}
-                    <div className="chart-container">
-                        <h3 className="font-semibold mb-4">Atividade Recente</h3>
-                        <div className="space-y-3">
-                            {getSessions().slice(0, 5).map((session, index) => (
-                                <div
-                                    key={index}
-                                    className="flex items-center gap-3 text-sm"
-                                >
-                                    <div className={`w-2 h-2 rounded-full ${session.status === 'completed' ? 'bg-success-500' : 'bg-warning-500'
-                                        }`} />
-                                    <div>
-                                        <p className="font-medium">
-                                            {session.status === 'completed' ? 'Sessão concluída' : 'Sessão em andamento'}
-                                        </p>
-                                        <p className="text-neutral-500 text-xs">
-                                            {format(new Date(session.startTime), "dd/MM 'às' HH:mm", { locale: ptBR })}
-                                        </p>
-                                    </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {(patient.allergies || []).map((item, idx) => (
+                                        <Badge key={idx} variant="error">
+                                            <AlertCircle size={12} />
+                                            {item}
+                                            <button onClick={() => removeFromList('allergies', idx)} className="ml-1">
+                                                <X size={12} />
+                                            </button>
+                                        </Badge>
+                                    ))}
+                                    {(!patient.allergies || patient.allergies.length === 0) && (
+                                        <span className="text-sm text-[var(--text-muted)]">Nenhuma alergia registrada</span>
+                                    )}
                                 </div>
-                            ))}
-                            {getSessions().length === 0 && (
-                                <p className="text-neutral-500 text-sm text-center py-4">
-                                    Nenhuma sessão ainda.
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
+                            </Card>
 
-            {/* Photo Upload Modal */}
-            <AnimatePresence>
-                {showPhotoModal && (
-                    <div className="modal-overlay" onClick={() => setShowPhotoModal(false)}>
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="modal-content text-center"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <h2 className="text-xl font-bold mb-6">Foto do Perfil</h2>
-
-                            {patient.photo ? (
-                                <div className="mb-6">
-                                    <img
-                                        src={patient.photo}
-                                        alt="Foto atual"
-                                        className="w-40 h-40 rounded-full mx-auto object-cover border-4 border-neutral-200"
+                            {/* Medicamentos */}
+                            <Card>
+                                <SectionTitle>Medicamentos</SectionTitle>
+                                <div className="flex gap-2 mb-3">
+                                    <Input
+                                        placeholder="Adicionar medicamento..."
+                                        value={tempInputs.medication}
+                                        onChange={(e) => setTempInputs({ ...tempInputs, medication: e.target.value })}
+                                        className="flex-1"
                                     />
+                                    <Button
+                                        onClick={() => addToList('medications', tempInputs.medication, 'medication')}
+                                        size="sm"
+                                    >
+                                        <Plus size={18} />
+                                    </Button>
                                 </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {(patient.medications || []).map((item, idx) => (
+                                        <Badge key={idx} variant="primary">
+                                            <Pill size={12} />
+                                            {item}
+                                            <button onClick={() => removeFromList('medications', idx)} className="ml-1">
+                                                <X size={12} />
+                                            </button>
+                                        </Badge>
+                                    ))}
+                                    {(!patient.medications || patient.medications.length === 0) && (
+                                        <span className="text-sm text-[var(--text-muted)]">Nenhum medicamento registrado</span>
+                                    )}
+                                </div>
+                            </Card>
+                        </div>
+                    )}
+
+                    {/* PREFERÊNCIAS */}
+                    {activeTab === 'preferences' && (
+                        <div className="space-y-4">
+                            {/* Interesses */}
+                            <Card>
+                                <SectionTitle>Interesses</SectionTitle>
+                                <div className="flex gap-2 mb-3">
+                                    <Input
+                                        placeholder="Adicionar interesse..."
+                                        value={tempInputs.interest}
+                                        onChange={(e) => setTempInputs({ ...tempInputs, interest: e.target.value })}
+                                        className="flex-1"
+                                    />
+                                    <Button
+                                        onClick={() => addToList('interests', tempInputs.interest, 'interest')}
+                                        size="sm"
+                                    >
+                                        <Plus size={18} />
+                                    </Button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {(patient.interests || []).map((item, idx) => (
+                                        <Badge key={idx} variant="success">
+                                            <Star size={12} />
+                                            {item}
+                                            <button onClick={() => removeFromList('interests', idx)} className="ml-1">
+                                                <X size={12} />
+                                            </button>
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </Card>
+
+                            {/* Forças */}
+                            <Card>
+                                <SectionTitle>Pontos Fortes</SectionTitle>
+                                <div className="flex gap-2 mb-3">
+                                    <Input
+                                        placeholder="Adicionar ponto forte..."
+                                        value={tempInputs.strength}
+                                        onChange={(e) => setTempInputs({ ...tempInputs, strength: e.target.value })}
+                                        className="flex-1"
+                                    />
+                                    <Button
+                                        onClick={() => addToList('strengths', tempInputs.strength, 'strength')}
+                                        size="sm"
+                                    >
+                                        <Plus size={18} />
+                                    </Button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {(patient.strengths || []).map((item, idx) => (
+                                        <Badge key={idx} variant="purple">
+                                            {item}
+                                            <button onClick={() => removeFromList('strengths', idx)} className="ml-1">
+                                                <X size={12} />
+                                            </button>
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </Card>
+
+                            {/* Desafios */}
+                            <Card>
+                                <SectionTitle>Desafios</SectionTitle>
+                                <div className="flex gap-2 mb-3">
+                                    <Input
+                                        placeholder="Adicionar desafio..."
+                                        value={tempInputs.challenge}
+                                        onChange={(e) => setTempInputs({ ...tempInputs, challenge: e.target.value })}
+                                        className="flex-1"
+                                    />
+                                    <Button
+                                        onClick={() => addToList('challenges', tempInputs.challenge, 'challenge')}
+                                        size="sm"
+                                    >
+                                        <Plus size={18} />
+                                    </Button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {(patient.challenges || []).map((item, idx) => (
+                                        <Badge key={idx} variant="warning">
+                                            {item}
+                                            <button onClick={() => removeFromList('challenges', idx)} className="ml-1">
+                                                <X size={12} />
+                                            </button>
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </Card>
+                        </div>
+                    )}
+
+                    {/* OBSERVAÇÕES */}
+                    {activeTab === 'notes' && (
+                        <div className="space-y-4">
+                            <Card>
+                                <Textarea
+                                    placeholder="Adicionar nova observação..."
+                                    value={newNote}
+                                    onChange={(e) => setNewNote(e.target.value)}
+                                />
+                                <Button
+                                    onClick={handleAddNote}
+                                    className="w-full mt-3"
+                                    disabled={!newNote.trim()}
+                                >
+                                    <Plus size={18} />
+                                    Adicionar Nota
+                                </Button>
+                            </Card>
+
+                            {notes.length === 0 ? (
+                                <EmptyState
+                                    icon={FileText}
+                                    title="Nenhuma observação"
+                                    description="Adicione observações importantes sobre o paciente"
+                                />
                             ) : (
-                                <div className="w-40 h-40 rounded-full mx-auto mb-6 bg-neutral-100 flex items-center justify-center">
-                                    <ImageIcon className="w-16 h-16 text-neutral-400" />
+                                <div className="space-y-3">
+                                    {notes.map((note, idx) => (
+                                        <Card key={idx} hover={false}>
+                                            <p className="text-[var(--text-primary)]">{note.content}</p>
+                                            <p className="text-xs text-[var(--text-muted)] mt-2">
+                                                {new Date(note.timestamp).toLocaleDateString('pt-BR', {
+                                                    day: '2-digit',
+                                                    month: 'short',
+                                                    year: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </p>
+                                        </Card>
+                                    ))}
                                 </div>
                             )}
-
-                            <div className="space-y-3">
-                                <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="btn-primary w-full"
-                                >
-                                    <Camera size={18} />
-                                    {patient.photo ? 'Alterar Foto' : 'Escolher Foto'}
-                                </button>
-
-                                {patient.photo && (
-                                    <button
-                                        onClick={handleRemovePhoto}
-                                        className="btn-secondary w-full text-error-600"
-                                    >
-                                        <Trash2 size={18} />
-                                        Remover Foto
-                                    </button>
-                                )}
-
-                                <button
-                                    onClick={() => setShowPhotoModal(false)}
-                                    className="btn-secondary w-full"
-                                >
-                                    Cancelar
-                                </button>
-                            </div>
-
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                onChange={handlePhotoUpload}
-                                className="hidden"
-                            />
-
-                            <p className="text-xs text-neutral-500 mt-4">
-                                Formatos aceitos: JPG, PNG, GIF. Tamanho máximo: 5MB
-                            </p>
-                        </motion.div>
-                    </div>
-                )}
+                        </div>
+                    )}
+                </motion.div>
             </AnimatePresence>
         </div>
     );

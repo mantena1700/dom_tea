@@ -40,9 +40,8 @@ import {
     getPatient,
     getPrograms,
     getSessions,
-    getStats,
     getTodayCheckin,
-    saveCheckin,
+    saveDailyCheckin,
 } from '@/lib/dataService';
 
 // Opções de humor
@@ -64,7 +63,7 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [patient, setPatient] = useState(null);
     const [programs, setPrograms] = useState([]);
-    const [stats, setStats] = useState(null);
+    const [sessions, setSessions] = useState([]);
     const [checkin, setCheckin] = useState({
         sleep: 8,
         mood: 'good',
@@ -78,16 +77,16 @@ export default function DashboardPage() {
 
     const loadData = async () => {
         try {
-            const [patientData, programsData, statsData, todayCheckin] = await Promise.all([
+            const [patientData, programsData, sessionsData, todayCheckin] = await Promise.all([
                 getPatient(),
                 getPrograms(),
-                getStats(),
-                getTodayCheckin()
+                getSessions(),
+                Promise.resolve(getTodayCheckin())
             ]);
 
             setPatient(patientData);
             setPrograms(programsData || []);
-            setStats(statsData);
+            setSessions(sessionsData || []);
             if (todayCheckin) {
                 setCheckin(todayCheckin);
                 setCheckinSaved(true);
@@ -101,12 +100,22 @@ export default function DashboardPage() {
 
     const handleSaveCheckin = async () => {
         try {
-            await saveCheckin(checkin);
+            await saveDailyCheckin(checkin);
             setCheckinSaved(true);
         } catch (error) {
             console.error('Erro ao salvar check-in:', error);
         }
     };
+
+    // Estatísticas calculadas
+    const todaySessions = sessions.filter(s => {
+        const today = new Date().toDateString();
+        return new Date(s.startTime).toDateString() === today;
+    }).length;
+
+    const globalAccuracy = sessions.length > 0
+        ? Math.round(sessions.reduce((acc, s) => acc + (s.accuracy || 0), 0) / sessions.length)
+        : 0;
 
     // Programas ativos (limitados para mobile)
     const activePrograms = programs.filter(p => p.active).slice(0, 4);
@@ -140,19 +149,19 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <StatCard
                     label="Sessões Hoje"
-                    value={stats?.todaySessions || 0}
+                    value={todaySessions}
                     icon={Activity}
                     color="primary"
                 />
                 <StatCard
                     label="Taxa de Acerto"
-                    value={`${stats?.globalAccuracy || 0}%`}
+                    value={`${globalAccuracy}%`}
                     icon={Target}
-                    color={stats?.globalAccuracy >= 80 ? "success" : stats?.globalAccuracy >= 50 ? "warning" : "error"}
+                    color={globalAccuracy >= 80 ? "success" : globalAccuracy >= 50 ? "warning" : "error"}
                 />
                 <StatCard
                     label="Sequência"
-                    value={`${stats?.streak || 0} dias`}
+                    value="0 dias"
                     icon={Zap}
                     color="warning"
                 />
