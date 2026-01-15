@@ -245,22 +245,20 @@ export default function PatientProfile() {
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-500 via-primary-600 to-purple-600 p-8 mb-8"
+                className="relative overflow-hidden rounded-2xl mb-8"
+                style={{
+                    background: 'linear-gradient(135deg, #1E88E5 0%, #1565C0 50%, #0D47A1 100%)',
+                    padding: '2rem',
+                }}
             >
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-10">
-                    <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-white blur-3xl" />
-                    <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full bg-white blur-2xl" />
-                </div>
-
-                <div className="relative flex flex-col md:flex-row items-center gap-8">
+                <div className="relative flex flex-col md:flex-row items-center gap-6">
                     {/* Photo */}
                     <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        className="relative"
+                        whileHover={{ scale: 1.02 }}
+                        className="relative flex-shrink-0"
                     >
                         <div
-                            className="w-40 h-40 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden border-4 border-white/30 shadow-2xl cursor-pointer"
+                            className="w-32 h-32 md:w-36 md:h-36 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden border-4 border-white/40 shadow-xl cursor-pointer"
                             onClick={() => setShowPhotoModal(true)}
                         >
                             {patient.photo ? (
@@ -270,61 +268,61 @@ export default function PatientProfile() {
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <div className="text-center text-white/70">
-                                    <Camera className="w-12 h-12 mx-auto mb-2" />
-                                    <span className="text-sm">Adicionar foto</span>
+                                <div className="text-center text-white/80">
+                                    <Camera className="w-10 h-10 mx-auto mb-1" />
+                                    <span className="text-xs">Adicionar foto</span>
                                 </div>
                             )}
                         </div>
                         <button
                             onClick={() => setShowPhotoModal(true)}
-                            className="absolute bottom-2 right-2 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center text-primary-500 hover:bg-primary-50 transition-colors"
+                            className="absolute bottom-1 right-1 w-9 h-9 rounded-full bg-white shadow-lg flex items-center justify-center text-primary-600 hover:bg-primary-50 transition-colors"
                         >
-                            <Camera size={20} />
+                            <Camera size={18} />
                         </button>
                     </motion.div>
 
                     {/* Info */}
                     <div className="flex-1 text-center md:text-left text-white">
                         {isEditing ? (
-                            <div className="space-y-4 max-w-md">
+                            <div className="space-y-3 max-w-md">
                                 <input
                                     type="text"
                                     value={patient.name || ''}
                                     onChange={(e) => setPatient({ ...patient, name: e.target.value })}
                                     placeholder="Nome completo"
-                                    className="w-full px-4 py-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/50 text-xl font-bold"
+                                    className="w-full px-4 py-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/60 text-xl font-bold"
                                 />
                                 <input
                                     type="text"
                                     value={patient.nickname || ''}
                                     onChange={(e) => setPatient({ ...patient, nickname: e.target.value })}
                                     placeholder="Apelido carinhoso"
-                                    className="w-full px-4 py-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/50"
+                                    className="w-full px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/60"
                                 />
                                 <input
                                     type="date"
                                     value={patient.birthDate || ''}
                                     onChange={(e) => setPatient({ ...patient, birthDate: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white"
+                                    className="w-full px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white"
                                 />
                             </div>
                         ) : (
                             <>
-                                <h1 className="text-4xl font-bold mb-2">
+                                <h1 className="text-3xl md:text-4xl font-bold mb-1" style={{ color: 'white' }}>
                                     {patient.name || 'Cadastre seu filho'}
                                 </h1>
                                 {patient.nickname && (
-                                    <p className="text-xl text-white/80 mb-2">"{patient.nickname}"</p>
+                                    <p className="text-lg text-white/80 mb-3">"{patient.nickname}"</p>
                                 )}
                                 {patient.birthDate && (
-                                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-4">
-                                        <span className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
-                                            <Cake size={18} />
+                                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-3">
+                                        <span className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full text-sm">
+                                            <Cake size={16} />
                                             {calculateAge(patient.birthDate)}
                                         </span>
-                                        <span className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
-                                            <Calendar size={18} />
+                                        <span className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full text-sm">
+                                            <Calendar size={16} />
                                             {format(new Date(patient.birthDate), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                                         </span>
                                     </div>
@@ -334,7 +332,7 @@ export default function PatientProfile() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-3">
+                    <div className="flex gap-2 flex-shrink-0">
                         {isEditing ? (
                             <>
                                 <button
@@ -342,24 +340,24 @@ export default function PatientProfile() {
                                         setIsEditing(false);
                                         loadData();
                                     }}
-                                    className="px-6 py-3 rounded-xl bg-white/20 text-white hover:bg-white/30 transition-colors"
+                                    className="px-5 py-2.5 rounded-xl bg-white/20 text-white hover:bg-white/30 transition-colors text-sm"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     onClick={handleSave}
-                                    className="px-6 py-3 rounded-xl bg-white text-primary-600 font-semibold hover:bg-white/90 transition-colors flex items-center gap-2"
+                                    className="px-5 py-2.5 rounded-xl bg-white text-primary-600 font-semibold hover:bg-white/90 transition-colors flex items-center gap-2 text-sm"
                                 >
-                                    <Save size={18} />
+                                    <Save size={16} />
                                     Salvar
                                 </button>
                             </>
                         ) : (
                             <button
                                 onClick={() => setIsEditing(true)}
-                                className="px-6 py-3 rounded-xl bg-white/20 text-white hover:bg-white/30 transition-colors flex items-center gap-2"
+                                className="px-5 py-2.5 rounded-xl bg-white/20 text-white hover:bg-white/30 transition-colors flex items-center gap-2 text-sm"
                             >
-                                <Edit2 size={18} />
+                                <Edit2 size={16} />
                                 Editar
                             </button>
                         )}
@@ -368,22 +366,22 @@ export default function PatientProfile() {
 
                 {/* Quick Stats */}
                 {stats && (
-                    <div className="relative grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                            <p className="text-3xl font-bold">{stats.totalSessions}</p>
-                            <p className="text-white/70 text-sm">Sessões Realizadas</p>
+                    <div className="relative grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+                        <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 text-center">
+                            <p className="text-2xl font-bold text-white">{stats.totalSessions}</p>
+                            <p className="text-white/70 text-xs">Sessões Realizadas</p>
                         </div>
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                            <p className="text-3xl font-bold">{stats.totalTrials}</p>
-                            <p className="text-white/70 text-sm">Tentativas Totais</p>
+                        <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 text-center">
+                            <p className="text-2xl font-bold text-white">{stats.totalTrials}</p>
+                            <p className="text-white/70 text-xs">Tentativas Totais</p>
                         </div>
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                            <p className="text-3xl font-bold">{stats.weekAccuracy}%</p>
-                            <p className="text-white/70 text-sm">Acurácia Semanal</p>
+                        <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 text-center">
+                            <p className="text-2xl font-bold text-white">{stats.weekAccuracy}%</p>
+                            <p className="text-white/70 text-xs">Acurácia Semanal</p>
                         </div>
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                            <p className="text-3xl font-bold">{getPrograms().filter(p => p.status === 'active').length}</p>
-                            <p className="text-white/70 text-sm">Programas Ativos</p>
+                        <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 text-center">
+                            <p className="text-2xl font-bold text-white">{getPrograms().filter(p => p.status === 'active').length}</p>
+                            <p className="text-white/70 text-xs">Programas Ativos</p>
                         </div>
                     </div>
                 )}
