@@ -22,6 +22,7 @@ import {
     Shield,
     Mail,
     Phone,
+    Activity,
 } from 'lucide-react';
 import {
     getSettings,
@@ -583,8 +584,8 @@ export default function SettingsPage() {
                                 <button
                                     onClick={() => handleSaveSettings({ theme: 'light' })}
                                     className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${settings.theme === 'light'
-                                            ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white'
-                                            : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
+                                        ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white'
+                                        : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
                                         }`}
                                 >
                                     <Sun size={16} />
@@ -593,8 +594,8 @@ export default function SettingsPage() {
                                 <button
                                     onClick={() => handleSaveSettings({ theme: 'dark' })}
                                     className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${settings.theme === 'dark'
-                                            ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white'
-                                            : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
+                                        ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white'
+                                        : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
                                         }`}
                                 >
                                     <Moon size={16} />
