@@ -27,7 +27,7 @@ model Patient {
   behaviors   Behavior[]
   checkins    DailyCheckin[]
   programs    Program[]
-  notes       Note[]
+  attachedNotes       Note[]
 }
 
 // ===== PROGRAMA DE ENSINO =====
@@ -80,7 +80,7 @@ model Session {
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
   trials    Trial[]
   behaviorRecords BehaviorRecord[]
-  notes     Note[]
+  attachedNotes     Note[]
 }
 
 // ===== TENTATIVA (TRIAL) =====
