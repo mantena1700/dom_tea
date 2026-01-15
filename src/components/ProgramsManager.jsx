@@ -3,483 +3,383 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    BookOpen,
     Plus,
     Search,
-    Filter,
-    ChevronRight,
-    Target,
-    TrendingUp,
-    TrendingDown,
-    Minus,
     Edit2,
     Trash2,
+    Target,
+    BookOpen,
     Check,
     X,
-    MoreVertical,
+    ChevronRight,
+    Filter
 } from 'lucide-react';
+import {
+    Card,
+    Badge,
+    Button,
+    Input,
+    Textarea,
+    ProgressBar,
+    PageHeader,
+    TabNav,
+    EmptyState
+} from '@/components/ui';
 import {
     getPrograms,
     addProgram,
     updateProgram,
     deleteProgram,
-    getProgramProgress,
-    getTrialStats,
 } from '@/lib/dataService';
 
-const categories = [
-    { id: 'MAND', name: 'Mand', description: 'Requisições e pedidos', color: 'primary' },
-    { id: 'TACT', name: 'Tact', description: 'Nomeação e identificação', color: 'success' },
-    { id: 'RECEPTIVO', name: 'Receptivo', description: 'Compreensão de linguagem', color: 'warning' },
-    { id: 'MOTOR', name: 'Motor', description: 'Habilidades motoras', color: 'purple' },
-    { id: 'SOCIAL', name: 'Social', description: 'Interações sociais', color: 'error' },
-    { id: 'INTRAVERBAL', name: 'Intraverbal', description: 'Conversação e diálogo', color: 'primary' },
+const CATEGORIES = [
+    { id: 'ALL', label: 'Todos' },
+    { id: 'MAND', label: 'Mand', color: 'primary' },
+    { id: 'TACT', label: 'Tact', color: 'success' },
+    { id: 'RECEPTIVO', label: 'Receptivo', color: 'warning' },
+    { id: 'MOTOR', label: 'Motor', color: 'purple' },
+    { id: 'SOCIAL', label: 'Social', color: 'error' },
+    { id: 'INTRAVERBAL', label: 'Intraverbal', color: 'neutral' },
 ];
 
 export default function ProgramsManager() {
-    const [mounted, setMounted] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [programs, setPrograms] = useState([]);
-    const [filterCategory, setFilterCategory] = useState('all');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [showAddModal, setShowAddModal] = useState(false);
+    const [search, setSearch] = useState('');
+    const [activeCategory, setActiveCategory] = useState('ALL');
+    const [showForm, setShowForm] = useState(false);
     const [editingProgram, setEditingProgram] = useState(null);
-    const [selectedProgram, setSelectedProgram] = useState(null);
-    const [newProgram, setNewProgram] = useState({
+    const [formData, setFormData] = useState({
         name: '',
-        category: 'MAND',
         description: '',
+        category: 'MAND',
         targetAccuracy: 80,
+        active: true
     });
 
     useEffect(() => {
-        setMounted(true);
         loadPrograms();
     }, []);
 
-    const loadPrograms = () => {
-        setPrograms(getPrograms());
+    const loadPrograms = async () => {
+        try {
+            const data = await getPrograms();
+            setPrograms(data || []);
+        } catch (error) {
+            console.error('Erro ao carregar programas:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const filteredPrograms = programs.filter(program => {
-        const matchesCategory = filterCategory === 'all' || program.category === filterCategory;
-        const matchesSearch = program.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            program.description?.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesCategory && matchesSearch;
+    const handleSaveProgram = async () => {
+        try {
+            if (editingProgram) {
+                await updateProgram(editingProgram.id, formData);
+            } else {
+                await addProgram(formData);
+            }
+            await loadPrograms();
+            handleCloseForm();
+        } catch (error) {
+            console.error('Erro ao salvar programa:', error);
+        }
+    };
+
+    const handleDeleteProgram = async (id) => {
+        if (confirm('Tem certeza que deseja excluir este programa?')) {
+            try {
+                await deleteProgram(id);
+                await loadPrograms();
+            } catch (error) {
+                console.error('Erro ao excluir programa:', error);
+            }
+        }
+    };
+
+    const handleEditProgram = (program) => {
+        setEditingProgram(program);
+        setFormData({
+            name: program.name,
+            description: program.description || '',
+            category: program.category,
+            targetAccuracy: program.targetAccuracy || 80,
+            active: program.active ?? true
+        });
+        setShowForm(true);
+    };
+
+    const handleCloseForm = () => {
+        setShowForm(false);
+        setEditingProgram(null);
+        setFormData({
+            name: '',
+            description: '',
+            category: 'MAND',
+            targetAccuracy: 80,
+            active: true
+        });
+    };
+
+    // Filtro
+    const filteredPrograms = programs.filter(p => {
+        const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
+        const matchCategory = activeCategory === 'ALL' || p.category === activeCategory;
+        return matchSearch && matchCategory;
     });
 
-    const handleAddProgram = () => {
-        if (!newProgram.name.trim()) return;
-
-        addProgram(newProgram);
-        setNewProgram({
-            name: '',
-            category: 'MAND',
-            description: '',
-            targetAccuracy: 80,
-        });
-        setShowAddModal(false);
-        loadPrograms();
+    // Contagem por categoria
+    const getCategoryCount = (cat) => {
+        if (cat === 'ALL') return programs.length;
+        return programs.filter(p => p.category === cat).length;
     };
 
-    const handleUpdateProgram = () => {
-        if (!editingProgram || !editingProgram.name.trim()) return;
-
-        updateProgram(editingProgram.id, editingProgram);
-        setEditingProgram(null);
-        loadPrograms();
-    };
-
-    const handleDeleteProgram = (id) => {
-        if (confirm('Tem certeza que deseja excluir este programa?')) {
-            deleteProgram(id);
-            loadPrograms();
-        }
-    };
-
-    const handleToggleStatus = (program) => {
-        const newStatus = program.status === 'active' ? 'paused' : 'active';
-        updateProgram(program.id, { status: newStatus });
-        loadPrograms();
-    };
-
-    const getProgramStats = (programId) => {
-        const stats = getTrialStats(programId, 30);
-        const progress = getProgramProgress(programId);
-        return { stats, progress };
-    };
-
-    const getTrendIcon = (trend) => {
-        switch (trend) {
-            case 'increasing':
-                return <TrendingUp className="w-4 h-4 text-success-500" />;
-            case 'decreasing':
-                return <TrendingDown className="w-4 h-4 text-error-500" />;
-            default:
-                return <Minus className="w-4 h-4 text-neutral-400" />;
-        }
-    };
-
-    if (!mounted) {
-        return <div className="animate-pulse p-8">Carregando...</div>;
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[50vh]">
+                <div className="w-10 h-10 border-4 border-[var(--primary-500)]/30 border-t-[var(--primary-500)] rounded-full animate-spin" />
+            </div>
+        );
     }
 
     return (
-        <div className="animate-fade-in">
-            {/* Page Header */}
-            <div className="page-header flex flex-wrap items-start justify-between gap-4">
-                <div>
-                    <h1 className="page-title flex items-center gap-3">
-                        <BookOpen className="w-8 h-8 text-primary-500" />
-                        Programas de Ensino
-                    </h1>
-                    <p className="page-subtitle">
-                        Gerencie os programas ABA e acompanhe o progresso de cada um.
-                    </p>
-                </div>
+        <div className="max-w-5xl mx-auto px-4 py-6">
 
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className="btn-primary"
-                >
-                    <Plus size={20} />
-                    Novo Programa
-                </button>
-            </div>
+            <PageHeader
+                title="Programas de Ensino"
+                subtitle="Gerencie os programas ABA"
+                action={
+                    <Button onClick={() => setShowForm(true)}>
+                        <Plus size={18} />
+                        <span className="hidden sm:inline">Novo Programa</span>
+                    </Button>
+                }
+            />
 
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-4 mb-6">
-                <div className="relative flex-1 min-w-[200px] max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                    <input
-                        type="text"
-                        placeholder="Buscar programas..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="input-field pl-10"
-                    />
-                </div>
+            {/* Busca e Filtros */}
+            <div className="space-y-3 mb-6">
+                <Input
+                    icon={Search}
+                    placeholder="Buscar programa..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                />
 
-                <div className="flex gap-2 flex-wrap">
-                    <button
-                        onClick={() => setFilterCategory('all')}
-                        style={{
-                            padding: '0.5rem 1rem',
-                            borderRadius: '0.75rem',
-                            fontWeight: 500,
-                            transition: 'all 0.2s',
-                            backgroundColor: filterCategory === 'all' ? '#2563eb' : 'rgba(30, 136, 229, 0.1)',
-                            color: filterCategory === 'all' ? 'white' : '#e5e7eb',
-                            border: filterCategory === 'all' ? 'none' : '1px solid rgba(30, 136, 229, 0.2)',
-                        }}
-                    >
-                        Todos
-                    </button>
-                    {categories.map(cat => (
+                {/* Categorias - Scroll horizontal em mobile */}
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                    {CATEGORIES.map(cat => (
                         <button
                             key={cat.id}
-                            onClick={() => setFilterCategory(cat.id)}
-                            style={{
-                                padding: '0.5rem 1rem',
-                                borderRadius: '0.75rem',
-                                fontWeight: 500,
-                                transition: 'all 0.2s',
-                                backgroundColor: filterCategory === cat.id ? '#2563eb' : 'rgba(30, 136, 229, 0.1)',
-                                color: filterCategory === cat.id ? 'white' : '#e5e7eb',
-                                border: filterCategory === cat.id ? 'none' : '1px solid rgba(30, 136, 229, 0.2)',
-                            }}
+                            onClick={() => setActiveCategory(cat.id)}
+                            className={`
+                                flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all
+                                ${activeCategory === cat.id
+                                    ? 'bg-[var(--primary-500)] text-white'
+                                    : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--interactive-hover)]'
+                                }
+                            `}
                         >
-                            {cat.name}
+                            {cat.label}
+                            <span className="ml-1.5 opacity-70">({getCategoryCount(cat.id)})</span>
                         </button>
                     ))}
                 </div>
             </div>
 
-            {/* Categories Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-8">
-                {categories.map(cat => {
-                    const catPrograms = programs.filter(p => p.category === cat.id);
-                    const activePrograms = catPrograms.filter(p => p.status === 'active');
-
-                    return (
-                        <motion.div
-                            key={cat.id}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            onClick={() => setFilterCategory(cat.id)}
-                            style={{
-                                padding: '1rem',
-                                borderRadius: '0.75rem',
-                                cursor: 'pointer',
-                                background: 'rgba(30, 136, 229, 0.08)',
-                                border: '1px solid rgba(30, 136, 229, 0.15)',
-                                transition: 'all 0.2s',
-                            }}
-                        >
-                            <p style={{ fontWeight: 700, fontSize: '1.5rem', color: '#60a5fa' }}>{catPrograms.length}</p>
-                            <p style={{ fontWeight: 500, fontSize: '0.875rem', color: '#e5e7eb' }}>{cat.name}</p>
-                            <p style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{activePrograms.length} ativos</p>
-                        </motion.div>
-                    );
-                })}
-            </div>
-
-            {/* Programs Grid */}
-            <div className="cards-grid">
-                {filteredPrograms.map((program, index) => {
-                    const { stats, progress } = getProgramStats(program.id);
-                    const categoryInfo = categories.find(c => c.id === program.category);
-
-                    return (
+            {/* Lista de Programas */}
+            {filteredPrograms.length === 0 ? (
+                <EmptyState
+                    icon={BookOpen}
+                    title="Nenhum programa encontrado"
+                    description={search ? "Tente buscar com outros termos" : "Adicione seu primeiro programa de ensino"}
+                    action={
+                        !search && <Button onClick={() => setShowForm(true)} size="sm">Adicionar Programa</Button>
+                    }
+                />
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredPrograms.map((program) => (
                         <motion.div
                             key={program.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.05 }}
-                            className={`chart-container hover:shadow-lg transition-shadow ${program.status !== 'active' ? 'opacity-60' : ''
-                                }`}
+                            layout
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
                         >
-                            <div className="flex items-start justify-between mb-4">
-                                <div>
-                                    <span className={`badge badge-${categoryInfo?.color || 'primary'} mb-2`}>
+                            <Card className="h-full flex flex-col">
+                                <div className="flex items-start justify-between mb-3">
+                                    <Badge
+                                        variant={
+                                            program.category === 'MAND' ? 'primary' :
+                                                program.category === 'TACT' ? 'success' :
+                                                    program.category === 'RECEPTIVO' ? 'warning' :
+                                                        program.category === 'MOTOR' ? 'purple' :
+                                                            program.category === 'SOCIAL' ? 'error' : 'neutral'
+                                        }
+                                    >
                                         {program.category}
-                                    </span>
-                                    <h3 className="font-bold text-lg">{program.name}</h3>
+                                    </Badge>
+                                    {!program.active && (
+                                        <Badge variant="neutral" size="sm">Inativo</Badge>
+                                    )}
                                 </div>
 
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => setEditingProgram({ ...program })}
-                                        className="btn-icon"
-                                        title="Editar"
-                                    >
-                                        <Edit2 size={16} />
-                                    </button>
-                                    <button
-                                        onClick={() => handleToggleStatus(program)}
-                                        className={`btn-icon ${program.status === 'active' ? 'text-success-500' : 'text-neutral-400'}`}
-                                        title={program.status === 'active' ? 'Pausar' : 'Ativar'}
-                                    >
-                                        {program.status === 'active' ? <Check size={16} /> : <X size={16} />}
-                                    </button>
-                                </div>
-                            </div>
+                                <h3 className="font-semibold text-[var(--text-primary)] mb-1 line-clamp-1">
+                                    {program.name}
+                                </h3>
+                                <p className="text-sm text-[var(--text-tertiary)] mb-4 line-clamp-2 flex-1">
+                                    {program.description || 'Sem descrição'}
+                                </p>
 
-                            <p className="text-sm text-neutral-500 mb-4">{program.description}</p>
-
-                            {/* Progress */}
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-neutral-500">Meta: {program.targetAccuracy}%</span>
-                                    <div className="flex items-center gap-2">
-                                        {progress && getTrendIcon(progress.trend)}
-                                        <span className={`font-bold ${stats?.accuracy >= program.targetAccuracy ? 'text-success-600' : 'text-neutral-600'
-                                            }`}>
-                                            {stats?.accuracy || 0}%
+                                <div className="mb-4">
+                                    <div className="flex justify-between text-xs mb-1">
+                                        <span className="text-[var(--text-muted)]">Progresso</span>
+                                        <span className="font-medium text-[var(--text-secondary)]">
+                                            {program.currentAccuracy || 0}% / {program.targetAccuracy || 80}%
                                         </span>
                                     </div>
-                                </div>
-
-                                <div className="progress-bar">
-                                    <div
-                                        className={`progress-bar-fill ${stats?.accuracy >= program.targetAccuracy ? 'success' :
-                                            stats?.accuracy >= program.targetAccuracy * 0.7 ? 'warning' : 'error'
-                                            }`}
-                                        style={{ width: `${Math.min(stats?.accuracy || 0, 100)}%` }}
+                                    <ProgressBar
+                                        value={program.currentAccuracy || 0}
+                                        max={program.targetAccuracy || 80}
+                                        color={program.currentAccuracy >= (program.targetAccuracy || 80) ? "success" : "primary"}
+                                        size="sm"
                                     />
                                 </div>
 
-                                <div className="flex items-center justify-between text-xs text-neutral-500">
-                                    <span>{stats?.total || 0} tentativas (30d)</span>
-                                    <span>{stats?.independentRate || 0}% independente</span>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => setSelectedProgram(program)}
-                                className="btn-secondary w-full mt-4"
-                            >
-                                Ver Detalhes
-                                <ChevronRight size={16} />
-                            </button>
-                        </motion.div>
-                    );
-                })}
-
-                {filteredPrograms.length === 0 && (
-                    <div className="col-span-full text-center py-12">
-                        <BookOpen className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">Nenhum programa encontrado</h3>
-                        <p className="text-neutral-500 mb-4">
-                            {searchQuery ? 'Tente uma busca diferente.' : 'Adicione seu primeiro programa.'}
-                        </p>
-                        <button onClick={() => setShowAddModal(true)} className="btn-primary">
-                            <Plus size={18} />
-                            Adicionar Programa
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {/* Add Program Modal */}
-            <AnimatePresence>
-                {showAddModal && (
-                    <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="modal-content"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <h2 className="text-xl font-bold mb-6">Novo Programa</h2>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="input-label">Nome do Programa</label>
-                                    <input
-                                        type="text"
-                                        value={newProgram.name}
-                                        onChange={(e) => setNewProgram({ ...newProgram, name: e.target.value })}
-                                        placeholder="Ex: Mand - Pedir brinquedos"
-                                        className="input-field"
-                                        autoFocus
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="input-label">Categoria</label>
-                                    <select
-                                        value={newProgram.category}
-                                        onChange={(e) => setNewProgram({ ...newProgram, category: e.target.value })}
-                                        className="input-field"
+                                <div className="flex gap-2 pt-3 border-t border-[var(--border-default)]">
+                                    <button
+                                        onClick={() => handleEditProgram(program)}
+                                        className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium text-[var(--primary-500)] hover:bg-[var(--primary-500)]/10 transition-colors"
                                     >
-                                        {categories.map(cat => (
-                                            <option key={cat.id} value={cat.id}>{cat.name} - {cat.description}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="input-label">Descrição</label>
-                                    <textarea
-                                        value={newProgram.description}
-                                        onChange={(e) => setNewProgram({ ...newProgram, description: e.target.value })}
-                                        placeholder="Descreva o objetivo deste programa..."
-                                        className="input-field resize-none"
-                                        rows={3}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="input-label">Meta de Acerto (%)</label>
-                                    <div className="flex items-center gap-4">
-                                        <input
-                                            type="range"
-                                            min="50"
-                                            max="100"
-                                            step="5"
-                                            value={newProgram.targetAccuracy}
-                                            onChange={(e) => setNewProgram({ ...newProgram, targetAccuracy: parseInt(e.target.value) })}
-                                            className="flex-1"
-                                        />
-                                        <span className="font-bold text-xl w-16 text-center">{newProgram.targetAccuracy}%</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 mt-6">
-                                <button onClick={() => setShowAddModal(false)} className="btn-secondary flex-1">
-                                    Cancelar
-                                </button>
-                                <button onClick={handleAddProgram} className="btn-primary flex-1" disabled={!newProgram.name.trim()}>
-                                    Criar Programa
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* Edit Program Modal */}
-            <AnimatePresence>
-                {editingProgram && (
-                    <div className="modal-overlay" onClick={() => setEditingProgram(null)}>
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="modal-content"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <h2 className="text-xl font-bold mb-6">Editar Programa</h2>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="input-label">Nome do Programa</label>
-                                    <input
-                                        type="text"
-                                        value={editingProgram.name}
-                                        onChange={(e) => setEditingProgram({ ...editingProgram, name: e.target.value })}
-                                        className="input-field"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="input-label">Categoria</label>
-                                    <select
-                                        value={editingProgram.category}
-                                        onChange={(e) => setEditingProgram({ ...editingProgram, category: e.target.value })}
-                                        className="input-field"
+                                        <Edit2 size={16} />
+                                        Editar
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteProgram(program.id)}
+                                        className="flex items-center justify-center p-2 rounded-lg text-[var(--error-500)] hover:bg-[var(--error-500)]/10 transition-colors"
                                     >
-                                        {categories.map(cat => (
-                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                        ))}
-                                    </select>
+                                        <Trash2 size={16} />
+                                    </button>
                                 </div>
+                            </Card>
+                        </motion.div>
+                    ))}
+                </div>
+            )}
 
-                                <div>
-                                    <label className="input-label">Descrição</label>
-                                    <textarea
-                                        value={editingProgram.description || ''}
-                                        onChange={(e) => setEditingProgram({ ...editingProgram, description: e.target.value })}
-                                        className="input-field resize-none"
-                                        rows={3}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="input-label">Meta de Acerto (%)</label>
-                                    <div className="flex items-center gap-4">
-                                        <input
-                                            type="range"
-                                            min="50"
-                                            max="100"
-                                            step="5"
-                                            value={editingProgram.targetAccuracy}
-                                            onChange={(e) => setEditingProgram({ ...editingProgram, targetAccuracy: parseInt(e.target.value) })}
-                                            className="flex-1"
-                                        />
-                                        <span className="font-bold text-xl w-16 text-center">{editingProgram.targetAccuracy}%</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 mt-6">
+            {/* Modal de Formulário */}
+            <AnimatePresence>
+                {showForm && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+                        onClick={handleCloseForm}
+                    >
+                        <motion.div
+                            initial={{ y: 100, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 100, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full max-w-lg bg-[var(--bg-card)] rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto"
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-xl font-bold text-[var(--text-primary)]">
+                                    {editingProgram ? 'Editar Programa' : 'Novo Programa'}
+                                </h2>
                                 <button
-                                    onClick={() => handleDeleteProgram(editingProgram.id)}
-                                    className="btn-secondary text-error-600 hover:bg-error-50"
+                                    onClick={handleCloseForm}
+                                    className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)]"
                                 >
-                                    <Trash2 size={18} />
-                                </button>
-                                <button onClick={() => setEditingProgram(null)} className="btn-secondary flex-1">
-                                    Cancelar
-                                </button>
-                                <button onClick={handleUpdateProgram} className="btn-primary flex-1">
-                                    Salvar
+                                    <X size={20} className="text-[var(--text-muted)]" />
                                 </button>
                             </div>
+
+                            <div className="space-y-4">
+                                <Input
+                                    label="Nome do Programa"
+                                    placeholder="Ex: Pedir objetos"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                />
+
+                                <Textarea
+                                    label="Descrição"
+                                    placeholder="Descreva o objetivo do programa..."
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                />
+
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                                        Categoria
+                                    </label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {CATEGORIES.filter(c => c.id !== 'ALL').map(cat => (
+                                            <button
+                                                key={cat.id}
+                                                onClick={() => setFormData({ ...formData, category: cat.id })}
+                                                className={`
+                                                    px-4 py-2 rounded-xl text-sm font-medium transition-all
+                                                    ${formData.category === cat.id
+                                                        ? 'bg-[var(--primary-500)] text-white'
+                                                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
+                                                    }
+                                                `}
+                                            >
+                                                {cat.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                                        Meta de Acerto: {formData.targetAccuracy}%
+                                    </label>
+                                    <input
+                                        type="range"
+                                        min="50"
+                                        max="100"
+                                        step="5"
+                                        value={formData.targetAccuracy}
+                                        onChange={(e) => setFormData({ ...formData, targetAccuracy: parseInt(e.target.value) })}
+                                        className="w-full h-2 bg-[var(--bg-tertiary)] rounded-lg appearance-none cursor-pointer accent-[var(--primary-500)]"
+                                    />
+                                </div>
+
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <div
+                                        className={`w-12 h-7 rounded-full transition-colors ${formData.active ? 'bg-[var(--primary-500)]' : 'bg-[var(--bg-tertiary)]'}`}
+                                        onClick={() => setFormData({ ...formData, active: !formData.active })}
+                                    >
+                                        <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform mt-1 ${formData.active ? 'translate-x-6' : 'translate-x-1'}`} />
+                                    </div>
+                                    <span className="text-sm font-medium text-[var(--text-secondary)]">
+                                        Programa Ativo
+                                    </span>
+                                </label>
+
+                                <div className="flex gap-3 pt-4">
+                                    <Button
+                                        variant="secondary"
+                                        onClick={handleCloseForm}
+                                        className="flex-1"
+                                    >
+                                        Cancelar
+                                    </Button>
+                                    <Button
+                                        onClick={handleSaveProgram}
+                                        className="flex-1"
+                                        disabled={!formData.name.trim()}
+                                    >
+                                        <Check size={18} />
+                                        Salvar
+                                    </Button>
+                                </div>
+                            </div>
                         </motion.div>
-                    </div>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>

@@ -3,586 +3,441 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Activity,
     Plus,
+    Search,
     TrendingUp,
     TrendingDown,
-    Minus,
-    Search,
-    Calendar,
-    Clock,
+    Activity,
+    AlertTriangle,
+    Eye,
     Edit2,
     Trash2,
-    AlertTriangle,
-    CheckCircle,
-    BarChart3,
+    X,
+    Check,
+    Calendar
 } from 'lucide-react';
+import {
+    Card,
+    Badge,
+    Button,
+    Input,
+    Textarea,
+    PageHeader,
+    StatCard,
+    EmptyState
+} from '@/components/ui';
 import {
     getBehaviors,
     addBehavior,
     updateBehavior,
-    getBehaviorRecords,
+    deleteBehavior,
     addBehaviorRecord,
-    getBehaviorStats,
+    getBehaviorRecords,
 } from '@/lib/dataService';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
-const behaviorTypes = [
-    { id: 'decrease', label: 'Reduzir', color: 'error', icon: TrendingDown },
-    { id: 'increase', label: 'Aumentar', color: 'success', icon: TrendingUp },
-    { id: 'monitor', label: 'Monitorar', color: 'primary', icon: Activity },
+const BEHAVIOR_TYPES = [
+    { id: 'ALL', label: 'Todos' },
+    { id: 'reduce', label: 'Reduzir', icon: TrendingDown, color: 'error' },
+    { id: 'increase', label: 'Aumentar', icon: TrendingUp, color: 'success' },
+    { id: 'monitor', label: 'Monitorar', icon: Eye, color: 'primary' },
 ];
 
-const severityLevels = [
-    { id: 'low', label: 'Baixa', color: 'success' },
-    { id: 'medium', label: 'Média', color: 'warning' },
+const PRIORITY_OPTIONS = [
     { id: 'high', label: 'Alta', color: 'error' },
-    { id: 'positive', label: 'Positivo', color: 'success' },
+    { id: 'medium', label: 'Média', color: 'warning' },
+    { id: 'low', label: 'Baixa', color: 'neutral' },
 ];
 
 export default function BehaviorsTracker() {
-    const [mounted, setMounted] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [behaviors, setBehaviors] = useState([]);
     const [records, setRecords] = useState([]);
-    const [filterType, setFilterType] = useState('all');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [showRecordModal, setShowRecordModal] = useState(false);
+    const [activeFilter, setActiveFilter] = useState('ALL');
+    const [search, setSearch] = useState('');
+    const [showForm, setShowForm] = useState(false);
     const [editingBehavior, setEditingBehavior] = useState(null);
-    const [selectedBehavior, setSelectedBehavior] = useState(null);
-    const [newRecord, setNewRecord] = useState({ count: 1, context: '', notes: '' });
-    const [newBehavior, setNewBehavior] = useState({
+    const [formData, setFormData] = useState({
         name: '',
-        type: 'decrease',
         description: '',
-        severity: 'medium',
-        color: '#F59E0B',
+        type: 'reduce',
+        priority: 'medium'
     });
 
     useEffect(() => {
-        setMounted(true);
         loadData();
     }, []);
 
-    const loadData = () => {
-        setBehaviors(getBehaviors());
-        setRecords(getBehaviorRecords());
-    };
-
-    const filteredBehaviors = behaviors.filter(behavior => {
-        const matchesType = filterType === 'all' || behavior.type === filterType;
-        const matchesSearch = behavior.name.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesType && matchesSearch;
-    });
-
-    const handleAddBehavior = () => {
-        if (!newBehavior.name.trim()) return;
-
-        addBehavior(newBehavior);
-        setNewBehavior({
-            name: '',
-            type: 'decrease',
-            description: '',
-            severity: 'medium',
-            color: '#F59E0B',
-        });
-        setShowAddModal(false);
-        loadData();
-    };
-
-    const handleQuickRecord = (behavior) => {
-        setSelectedBehavior(behavior);
-        setShowRecordModal(true);
-    };
-
-    const handleSaveRecord = () => {
-        if (!selectedBehavior) return;
-
-        addBehaviorRecord({
-            behaviorId: selectedBehavior.id,
-            count: newRecord.count,
-            context: newRecord.context,
-            notes: newRecord.notes,
-        });
-
-        setNewRecord({ count: 1, context: '', notes: '' });
-        setShowRecordModal(false);
-        setSelectedBehavior(null);
-        loadData();
-    };
-
-    const getTrendIcon = (trend) => {
-        switch (trend) {
-            case 'increasing':
-                return <TrendingUp className="w-5 h-5 text-error-500" />;
-            case 'decreasing':
-                return <TrendingDown className="w-5 h-5 text-success-500" />;
-            default:
-                return <Minus className="w-5 h-5 text-neutral-400" />;
+    const loadData = async () => {
+        try {
+            const [behaviorsData, recordsData] = await Promise.all([
+                getBehaviors(),
+                getBehaviorRecords()
+            ]);
+            setBehaviors(behaviorsData || []);
+            setRecords(recordsData || []);
+        } catch (error) {
+            console.error('Erro ao carregar dados:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const getBehaviorRecordsToday = (behaviorId) => {
-        const today = new Date().toDateString();
-        return records.filter(r =>
-            r.behaviorId === behaviorId &&
-            new Date(r.timestamp).toDateString() === today
-        ).reduce((sum, r) => sum + (r.count || 1), 0);
+    const handleSaveBehavior = async () => {
+        try {
+            if (editingBehavior) {
+                await updateBehavior(editingBehavior.id, formData);
+            } else {
+                await addBehavior(formData);
+            }
+            await loadData();
+            handleCloseForm();
+        } catch (error) {
+            console.error('Erro ao salvar comportamento:', error);
+        }
     };
 
-    if (!mounted) {
-        return <div className="animate-pulse p-8">Carregando...</div>;
+    const handleDeleteBehavior = async (id) => {
+        if (confirm('Tem certeza que deseja excluir este comportamento?')) {
+            try {
+                await deleteBehavior(id);
+                await loadData();
+            } catch (error) {
+                console.error('Erro ao excluir comportamento:', error);
+            }
+        }
+    };
+
+    const handleRecordOccurrence = async (behaviorId) => {
+        try {
+            await addBehaviorRecord({
+                behaviorId,
+                timestamp: new Date().toISOString(),
+            });
+            await loadData();
+        } catch (error) {
+            console.error('Erro ao registrar ocorrência:', error);
+        }
+    };
+
+    const handleEditBehavior = (behavior) => {
+        setEditingBehavior(behavior);
+        setFormData({
+            name: behavior.name,
+            description: behavior.description || '',
+            type: behavior.type,
+            priority: behavior.priority || 'medium'
+        });
+        setShowForm(true);
+    };
+
+    const handleCloseForm = () => {
+        setShowForm(false);
+        setEditingBehavior(null);
+        setFormData({
+            name: '',
+            description: '',
+            type: 'reduce',
+            priority: 'medium'
+        });
+    };
+
+    // Estatísticas
+    const getTodayCount = (behaviorId) => {
+        const today = new Date().toDateString();
+        return records.filter(r => r.behaviorId === behaviorId && new Date(r.timestamp).toDateString() === today).length;
+    };
+
+    const getWeekAverage = (behaviorId) => {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const weekRecords = records.filter(r => r.behaviorId === behaviorId && new Date(r.timestamp) >= weekAgo);
+        return (weekRecords.length / 7).toFixed(1);
+    };
+
+    // Filtros
+    const filteredBehaviors = behaviors.filter(b => {
+        const matchSearch = b.name.toLowerCase().includes(search.toLowerCase());
+        const matchFilter = activeFilter === 'ALL' || b.type === activeFilter;
+        return matchSearch && matchFilter;
+    });
+
+    // Stats globais
+    const stats = {
+        toReduce: behaviors.filter(b => b.type === 'reduce').length,
+        toIncrease: behaviors.filter(b => b.type === 'increase').length,
+        todayRecords: records.filter(r => new Date(r.timestamp).toDateString() === new Date().toDateString()).length
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[50vh]">
+                <div className="w-10 h-10 border-4 border-[var(--primary-500)]/30 border-t-[var(--primary-500)] rounded-full animate-spin" />
+            </div>
+        );
     }
 
     return (
-        <div className="animate-fade-in">
-            {/* Page Header */}
-            <div className="page-header flex flex-wrap items-start justify-between gap-4">
-                <div>
-                    <h1 className="page-title flex items-center gap-3">
-                        <Activity className="w-8 h-8 text-warning-500" />
-                        Comportamentos
-                    </h1>
-                    <p className="page-subtitle">
-                        Registre e acompanhe comportamentos-alvo ao longo do tempo.
-                    </p>
-                </div>
+        <div className="max-w-5xl mx-auto px-4 py-6">
 
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className="btn-primary"
-                >
-                    <Plus size={20} />
-                    Novo Comportamento
-                </button>
+            <PageHeader
+                title="Comportamentos"
+                subtitle="Monitore comportamentos-alvo"
+                action={
+                    <Button onClick={() => setShowForm(true)}>
+                        <Plus size={18} />
+                        <span className="hidden sm:inline">Novo</span>
+                    </Button>
+                }
+            />
+
+            {/* Stats Resumo */}
+            <div className="grid grid-cols-3 gap-3 mb-6">
+                <StatCard
+                    label="Para Reduzir"
+                    value={stats.toReduce}
+                    icon={TrendingDown}
+                    color="error"
+                />
+                <StatCard
+                    label="Para Aumentar"
+                    value={stats.toIncrease}
+                    icon={TrendingUp}
+                    color="success"
+                />
+                <StatCard
+                    label="Registros Hoje"
+                    value={stats.todayRecords}
+                    icon={Calendar}
+                    color="primary"
+                />
             </div>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="stat-card"
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-error-100 flex items-center justify-center">
-                            <TrendingDown className="w-6 h-6 text-error-600" />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold">{behaviors.filter(b => b.type === 'decrease').length}</p>
-                            <p className="text-sm text-neutral-500">Para Reduzir</p>
-                        </div>
-                    </div>
-                </motion.div>
+            {/* Busca e Filtros */}
+            <div className="space-y-3 mb-6">
+                <Input
+                    icon={Search}
+                    placeholder="Buscar comportamento..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                />
 
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="stat-card"
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-success-100 flex items-center justify-center">
-                            <TrendingUp className="w-6 h-6 text-success-600" />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold">{behaviors.filter(b => b.type === 'increase').length}</p>
-                            <p className="text-sm text-neutral-500">Para Aumentar</p>
-                        </div>
-                    </div>
-                </motion.div>
-
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="stat-card"
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
-                            <Calendar className="w-6 h-6 text-primary-600" />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold">
-                                {records.filter(r => new Date(r.timestamp).toDateString() === new Date().toDateString()).length}
-                            </p>
-                            <p className="text-sm text-neutral-500">Registros Hoje</p>
-                        </div>
-                    </div>
-                </motion.div>
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-4 mb-6">
-                <div className="relative flex-1 min-w-[200px] max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                    <input
-                        type="text"
-                        placeholder="Buscar comportamentos..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="input-field pl-10"
-                    />
-                </div>
-
-                <div className="flex gap-2 flex-wrap">
-                    <button
-                        onClick={() => setFilterType('all')}
-                        style={{
-                            padding: '0.5rem 1rem',
-                            borderRadius: '0.75rem',
-                            fontWeight: 500,
-                            transition: 'all 0.2s',
-                            backgroundColor: filterType === 'all' ? '#2563eb' : 'rgba(30, 136, 229, 0.1)',
-                            color: filterType === 'all' ? 'white' : '#e5e7eb',
-                            border: filterType === 'all' ? 'none' : '1px solid rgba(30, 136, 229, 0.2)',
-                        }}
-                    >
-                        Todos
-                    </button>
-                    {behaviorTypes.map(type => (
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                    {BEHAVIOR_TYPES.map(type => (
                         <button
                             key={type.id}
-                            onClick={() => setFilterType(type.id)}
-                            style={{
-                                padding: '0.5rem 1rem',
-                                borderRadius: '0.75rem',
-                                fontWeight: 500,
-                                transition: 'all 0.2s',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                backgroundColor: filterType === type.id ? '#2563eb' : 'rgba(30, 136, 229, 0.1)',
-                                color: filterType === type.id ? 'white' : '#e5e7eb',
-                                border: filterType === type.id ? 'none' : '1px solid rgba(30, 136, 229, 0.2)',
-                            }}
+                            onClick={() => setActiveFilter(type.id)}
+                            className={`
+                                flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all
+                                ${activeFilter === type.id
+                                    ? 'bg-[var(--primary-500)] text-white'
+                                    : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--interactive-hover)]'
+                                }
+                            `}
                         >
-                            <type.icon size={16} />
+                            {type.icon && <type.icon size={16} />}
                             {type.label}
                         </button>
                     ))}
                 </div>
             </div>
 
-            {/* Behaviors Grid */}
-            <div className="space-y-5 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 lg:space-y-0">
-                {filteredBehaviors.map((behavior, index) => {
-                    const stats = getBehaviorStats(behavior.id, 30);
-                    const todayCount = getBehaviorRecordsToday(behavior.id);
-                    const typeInfo = behaviorTypes.find(t => t.id === behavior.type);
-
-                    return (
+            {/* Lista de Comportamentos */}
+            {filteredBehaviors.length === 0 ? (
+                <EmptyState
+                    icon={Activity}
+                    title="Nenhum comportamento encontrado"
+                    description={search ? "Tente buscar com outros termos" : "Adicione comportamentos para monitorar"}
+                    action={
+                        !search && <Button onClick={() => setShowForm(true)} size="sm">Adicionar</Button>
+                    }
+                />
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredBehaviors.map((behavior) => (
                         <motion.div
                             key={behavior.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.05 }}
-                            className="chart-container p-5 lg:p-6"
+                            layout
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
                         >
-                            <div className="flex items-start justify-between mb-5">
-                                <div className="flex items-center gap-4">
-                                    <div
-                                        className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                                        style={{ backgroundColor: `${behavior.color}20` }}
-                                    >
-                                        <div
-                                            className="w-5 h-5 rounded-full"
-                                            style={{ backgroundColor: behavior.color }}
-                                        />
+                            <Card className="h-full flex flex-col">
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <Badge
+                                            variant={
+                                                behavior.type === 'reduce' ? 'error' :
+                                                    behavior.type === 'increase' ? 'success' : 'primary'
+                                            }
+                                        >
+                                            {behavior.type === 'reduce' ? 'Reduzir' :
+                                                behavior.type === 'increase' ? 'Aumentar' : 'Monitorar'}
+                                        </Badge>
+                                        <Badge variant={
+                                            behavior.priority === 'high' ? 'error' :
+                                                behavior.priority === 'medium' ? 'warning' : 'neutral'
+                                        } size="sm">
+                                            {behavior.priority === 'high' ? 'Alta' :
+                                                behavior.priority === 'medium' ? 'Média' : 'Baixa'}
+                                        </Badge>
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-base">{behavior.name}</h3>
-                                        <div className="flex items-center gap-2 mt-1.5">
-                                            <span className={`badge badge-${typeInfo?.color || 'primary'} text-xs`}>
-                                                {typeInfo?.label}
-                                            </span>
-                                            <span className={`badge badge-${severityLevels.find(s => s.id === behavior.severity)?.color || 'warning'} text-xs`}>
-                                                {severityLevels.find(s => s.id === behavior.severity)?.label}
-                                            </span>
+                                    <button
+                                        onClick={() => handleEditBehavior(behavior)}
+                                        className="p-1.5 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)]"
+                                    >
+                                        <Edit2 size={14} />
+                                    </button>
+                                </div>
+
+                                <h3 className="font-semibold text-[var(--text-primary)] mb-1">
+                                    {behavior.name}
+                                </h3>
+                                <p className="text-sm text-[var(--text-tertiary)] mb-4 line-clamp-2 flex-1">
+                                    {behavior.description || 'Sem descrição'}
+                                </p>
+
+                                {/* Estatísticas */}
+                                <div className="grid grid-cols-2 gap-2 mb-4 p-3 bg-[var(--bg-tertiary)] rounded-xl">
+                                    <div className="text-center">
+                                        <div className="text-lg font-bold text-[var(--text-primary)]">
+                                            {getTodayCount(behavior.id)}
                                         </div>
+                                        <div className="text-xs text-[var(--text-muted)]">Hoje</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-lg font-bold text-[var(--text-primary)]">
+                                            {getWeekAverage(behavior.id)}
+                                        </div>
+                                        <div className="text-xs text-[var(--text-muted)]">Média/dia</div>
                                     </div>
                                 </div>
 
-                                <button
-                                    onClick={() => setEditingBehavior({ ...behavior })}
-                                    className="btn-icon w-10 h-10"
+                                {/* Ação */}
+                                <Button
+                                    onClick={() => handleRecordOccurrence(behavior.id)}
+                                    variant="secondary"
+                                    size="sm"
+                                    className="w-full"
                                 >
-                                    <Edit2 size={16} />
+                                    <Plus size={16} />
+                                    Registrar Ocorrência
+                                </Button>
+                            </Card>
+                        </motion.div>
+                    ))}
+                </div>
+            )}
+
+            {/* Modal de Formulário */}
+            <AnimatePresence>
+                {showForm && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+                        onClick={handleCloseForm}
+                    >
+                        <motion.div
+                            initial={{ y: 100, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 100, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full max-w-lg bg-[var(--bg-card)] rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto"
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-xl font-bold text-[var(--text-primary)]">
+                                    {editingBehavior ? 'Editar Comportamento' : 'Novo Comportamento'}
+                                </h2>
+                                <button
+                                    onClick={handleCloseForm}
+                                    className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)]"
+                                >
+                                    <X size={20} className="text-[var(--text-muted)]" />
                                 </button>
                             </div>
 
-                            {behavior.description && (
-                                <p className="text-sm text-neutral-500 mb-5 leading-relaxed">{behavior.description}</p>
-                            )}
-
-                            {/* Stats */}
-                            <div className="grid grid-cols-3 gap-3 mb-5 p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">
-                                <div className="text-center">
-                                    <p className="text-2xl font-bold">{todayCount}</p>
-                                    <p className="text-xs text-neutral-500 mt-1">Hoje</p>
-                                </div>
-                                <div className="text-center border-x border-neutral-200 dark:border-neutral-700">
-                                    <p className="text-2xl font-bold">{stats.avgPerDay}</p>
-                                    <p className="text-xs text-neutral-500 mt-1">Média/dia</p>
-                                </div>
-                                <div className="text-center flex flex-col items-center justify-center">
-                                    {getTrendIcon(stats.trend)}
-                                    <p className="text-xs text-neutral-500 mt-1">Tendência</p>
-                                </div>
-                            </div>
-
-                            {/* Quick Record Button */}
-                            <button
-                                onClick={() => handleQuickRecord(behavior)}
-                                className={`w-full btn-${behavior.type === 'increase' ? 'success' : 'secondary'} py-3.5`}
-                            >
-                                <Plus size={18} />
-                                Registrar Ocorrência
-                            </button>
-                        </motion.div>
-                    );
-                })}
-
-                {filteredBehaviors.length === 0 && (
-                    <div className="col-span-full text-center py-12">
-                        <Activity className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">Nenhum comportamento encontrado</h3>
-                        <p className="text-neutral-500 mb-4">
-                            Adicione comportamentos para começar a monitorar.
-                        </p>
-                        <button onClick={() => setShowAddModal(true)} className="btn-primary">
-                            <Plus size={18} />
-                            Adicionar Comportamento
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {/* Recent Records */}
-            {records.length > 0 && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="chart-container mt-6"
-                >
-                    <h3 className="font-semibold mb-4 flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-primary-500" />
-                        Registros Recentes
-                    </h3>
-                    <div className="space-y-2">
-                        {records.slice(-10).reverse().map((record, index) => {
-                            const behavior = behaviors.find(b => b.id === record.behaviorId);
-                            if (!behavior) return null;
-
-                            return (
-                                <div
-                                    key={index}
-                                    className="flex items-center justify-between p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div
-                                            className="w-3 h-3 rounded-full"
-                                            style={{ backgroundColor: behavior.color }}
-                                        />
-                                        <div>
-                                            <p className="font-medium text-sm">{behavior.name}</p>
-                                            <p className="text-xs text-neutral-500">
-                                                {format(new Date(record.timestamp), "dd/MM 'às' HH:mm", { locale: ptBR })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold">x{record.count || 1}</span>
-                                        {record.context && (
-                                            <span className="text-xs text-neutral-500 bg-neutral-100 px-2 py-1 rounded">
-                                                {record.context}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </motion.div>
-            )}
-
-            {/* Add Behavior Modal */}
-            <AnimatePresence>
-                {showAddModal && (
-                    <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="modal-content"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <h2 className="text-xl font-bold mb-6">Novo Comportamento</h2>
-
                             <div className="space-y-4">
-                                <div>
-                                    <label className="input-label">Nome do Comportamento</label>
-                                    <input
-                                        type="text"
-                                        value={newBehavior.name}
-                                        onChange={(e) => setNewBehavior({ ...newBehavior, name: e.target.value })}
-                                        placeholder="Ex: Estereotipia vocal"
-                                        className="input-field"
-                                        autoFocus
-                                    />
-                                </div>
+                                <Input
+                                    label="Nome do Comportamento"
+                                    placeholder="Ex: Autolesão"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                />
+
+                                <Textarea
+                                    label="Descrição"
+                                    placeholder="Descreva o comportamento..."
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                />
 
                                 <div>
-                                    <label className="input-label">Tipo</label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {behaviorTypes.map(type => (
+                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                                        Tipo
+                                    </label>
+                                    <div className="flex gap-2">
+                                        {BEHAVIOR_TYPES.filter(t => t.id !== 'ALL').map(type => (
                                             <button
                                                 key={type.id}
-                                                onClick={() => setNewBehavior({ ...newBehavior, type: type.id })}
-                                                className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${newBehavior.type === type.id
-                                                    ? `border-${type.color}-500 bg-${type.color}-50`
-                                                    : 'border-neutral-200 hover:border-neutral-300'
-                                                    }`}
+                                                onClick={() => setFormData({ ...formData, type: type.id })}
+                                                className={`
+                                                    flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-medium transition-all
+                                                    ${formData.type === type.id
+                                                        ? 'bg-[var(--primary-500)] text-white'
+                                                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
+                                                    }
+                                                `}
                                             >
-                                                <type.icon className={`w-5 h-5 text-${type.color}-500`} />
-                                                <span className="text-sm font-medium">{type.label}</span>
+                                                {type.icon && <type.icon size={16} />}
+                                                {type.label}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="input-label">Severidade</label>
-                                    <select
-                                        value={newBehavior.severity}
-                                        onChange={(e) => setNewBehavior({ ...newBehavior, severity: e.target.value })}
-                                        className="input-field"
-                                    >
-                                        {severityLevels.map(level => (
-                                            <option key={level.id} value={level.id}>{level.label}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="input-label">Descrição (opcional)</label>
-                                    <textarea
-                                        value={newBehavior.description}
-                                        onChange={(e) => setNewBehavior({ ...newBehavior, description: e.target.value })}
-                                        placeholder="Descreva o comportamento..."
-                                        className="input-field resize-none"
-                                        rows={2}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="input-label">Cor</label>
+                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                                        Prioridade
+                                    </label>
                                     <div className="flex gap-2">
-                                        {['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'].map(color => (
+                                        {PRIORITY_OPTIONS.map(opt => (
                                             <button
-                                                key={color}
-                                                onClick={() => setNewBehavior({ ...newBehavior, color })}
-                                                className={`w-10 h-10 rounded-lg border-2 ${newBehavior.color === color ? 'border-neutral-800' : 'border-transparent'
-                                                    }`}
-                                                style={{ backgroundColor: color }}
-                                            />
+                                                key={opt.id}
+                                                onClick={() => setFormData({ ...formData, priority: opt.id })}
+                                                className={`
+                                                    flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all
+                                                    ${formData.priority === opt.id
+                                                        ? 'bg-[var(--primary-500)] text-white'
+                                                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
+                                                    }
+                                                `}
+                                            >
+                                                {opt.label}
+                                            </button>
                                         ))}
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="flex gap-3 mt-6">
-                                <button onClick={() => setShowAddModal(false)} className="btn-secondary flex-1">
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={handleAddBehavior}
-                                    className="btn-primary flex-1"
-                                    disabled={!newBehavior.name.trim()}
-                                >
-                                    Criar Comportamento
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* Record Modal */}
-            <AnimatePresence>
-                {showRecordModal && selectedBehavior && (
-                    <div className="modal-overlay" onClick={() => setShowRecordModal(false)}>
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="modal-content"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <h2 className="text-xl font-bold mb-2">Registrar Ocorrência</h2>
-                            <p className="text-neutral-500 mb-6">{selectedBehavior.name}</p>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="input-label">Quantidade</label>
-                                    <div className="flex items-center gap-4">
-                                        <button
-                                            onClick={() => setNewRecord({ ...newRecord, count: Math.max(1, newRecord.count - 1) })}
-                                            className="btn-icon"
-                                        >
-                                            -
-                                        </button>
-                                        <span className="text-3xl font-bold w-16 text-center">{newRecord.count}</span>
-                                        <button
-                                            onClick={() => setNewRecord({ ...newRecord, count: newRecord.count + 1 })}
-                                            className="btn-icon"
-                                        >
-                                            +
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="input-label">Contexto</label>
-                                    <select
-                                        value={newRecord.context}
-                                        onChange={(e) => setNewRecord({ ...newRecord, context: e.target.value })}
-                                        className="input-field"
+                                <div className="flex gap-3 pt-4">
+                                    <Button
+                                        variant="secondary"
+                                        onClick={handleCloseForm}
+                                        className="flex-1"
                                     >
-                                        <option value="">Selecione...</option>
-                                        <option value="during_session">Durante sessão</option>
-                                        <option value="transition">Transição de atividade</option>
-                                        <option value="meal">Refeição</option>
-                                        <option value="free_time">Tempo livre</option>
-                                        <option value="social">Interação social</option>
-                                        <option value="demand">Demanda/Instrução</option>
-                                        <option value="other">Outro</option>
-                                    </select>
+                                        Cancelar
+                                    </Button>
+                                    <Button
+                                        onClick={handleSaveBehavior}
+                                        className="flex-1"
+                                        disabled={!formData.name.trim()}
+                                    >
+                                        <Check size={18} />
+                                        Salvar
+                                    </Button>
                                 </div>
-
-                                <div>
-                                    <label className="input-label">Notas (opcional)</label>
-                                    <textarea
-                                        value={newRecord.notes}
-                                        onChange={(e) => setNewRecord({ ...newRecord, notes: e.target.value })}
-                                        placeholder="Observações adicionais..."
-                                        className="input-field resize-none"
-                                        rows={2}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 mt-6">
-                                <button onClick={() => setShowRecordModal(false)} className="btn-secondary flex-1">
-                                    Cancelar
-                                </button>
-                                <button onClick={handleSaveRecord} className="btn-primary flex-1">
-                                    Registrar
-                                </button>
                             </div>
                         </motion.div>
-                    </div>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>
